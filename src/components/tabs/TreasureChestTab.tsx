@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSets, type SetEntry } from '@/lib/storage';
 import { cn } from '@/lib/utils';
-import { EnamelPin } from '@/components/treasure/EnamelPin';
+import { EnamelPin, type FestivalPin } from '@/components/treasure/EnamelPin';
 import { GlassShelf } from '@/components/treasure/GlassShelf';
 import { GemStack } from '@/components/treasure/GemStack';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
@@ -20,11 +20,11 @@ const groupByArtist = (sets: SetEntry[]) => {
   return groups;
 };
 
-// Mock pins data - would come from user achievements
-const mockPins = [
-  { id: '1', name: 'EDC Las Vegas', year: '2024', color: 'gold' as const },
-  { id: '2', name: 'Berghain', year: '2023', color: 'silver' as const },
-  { id: '3', name: 'Fabric London', year: '2024', color: 'gold' as const },
+// Festival pins data
+const festivalPins: FestivalPin[] = [
+  { id: '1', festival: 'edc', year: '2024' },
+  { id: '2', festival: 'tomorrowland', year: '2024' },
+  { id: '3', festival: 'ultra', year: '2024' },
 ];
 
 export const TreasureChestTab = () => {
@@ -52,15 +52,15 @@ export const TreasureChestTab = () => {
           <p className="text-xs text-muted-foreground/60 mt-1 tracking-widest uppercase">Your Collection</p>
         </div>
 
-        {/* The Lid - Trophy Case with Enamel Pins */}
+        {/* The Lid - Trophy Case with Festival Pins */}
         <div className="trophy-case mx-4 mb-8">
           <div className="trophy-case-texture" />
-          <div className="relative z-10 flex justify-center gap-6 py-6 px-4">
-            {mockPins.map((pin, i) => (
+          <div className="relative z-10 flex justify-center items-center gap-4 py-6 px-4">
+            {festivalPins.map((pin, i) => (
               <EnamelPin 
                 key={pin.id} 
                 pin={pin} 
-                tiltDeg={(i - 1) * 8} 
+                tiltDeg={(i - 1) * 5} 
               />
             ))}
           </div>
@@ -119,16 +119,19 @@ export const TreasureChestTab = () => {
         </div>
       </div>
 
-      {/* Floating Add Button */}
-      <Button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-2xl z-50 bg-primary/90 hover:bg-primary border border-primary-foreground/20"
-        style={{
-          boxShadow: '0 0 30px hsl(var(--gem-emerald) / 0.4), 0 8px 32px rgba(0,0,0,0.5)'
-        }}
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
+      {/* Mine a Gem Button - Inside frame */}
+      <div className="sticky bottom-20 left-0 right-0 flex justify-center pb-4 z-50">
+        <Button
+          onClick={() => setShowAddModal(true)}
+          className="px-6 py-3 h-auto rounded-full shadow-2xl bg-primary/90 hover:bg-primary border border-primary-foreground/20 gap-2"
+          style={{
+            boxShadow: '0 0 30px hsl(var(--gem-emerald) / 0.4), 0 8px 32px rgba(0,0,0,0.5)'
+          }}
+        >
+          <Pickaxe className="w-5 h-5" />
+          <span className="font-semibold">Mine a Gem</span>
+        </Button>
+      </div>
 
       {/* Add Gem Modal */}
       <AddGemModal 
