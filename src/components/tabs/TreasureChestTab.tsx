@@ -8,6 +8,14 @@ import { GlassShelf } from '@/components/treasure/GlassShelf';
 import { GemStack } from '@/components/treasure/GemStack';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
+import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
+import ultraPin from '@/assets/pins/ultra.png';
+import lollapaloozaPin from '@/assets/pins/lollapalooza.png';
+import factoryTownPin from '@/assets/pins/factory-town.png';
+import berghainPin from '@/assets/pins/berghain.png';
+import electricForestPin from '@/assets/pins/electric-forest.png';
+import coachellaPin from '@/assets/pins/coachella.png';
+import lostLandsPin from '@/assets/pins/lost-lands.png';
 
 // Group sets by artist name for stacking
 const groupByArtist = (sets: SetEntry[]) => {
@@ -24,11 +32,14 @@ const groupByArtist = (sets: SetEntry[]) => {
 // Festival badges data
 const festivalBadges: FestivalBadge[] = [
   { name: 'EDC Vegas', date: 'May 2024', color: 'purple', image: edcVegasPin },
-  { name: 'Berghain', date: 'Sep 2024', color: 'silver' },
-  { name: 'Lost Lands', date: 'Sep 2024', color: 'green' },
-  { name: 'Electric Forest', date: 'Jun 2024', color: 'purple' },
-  { name: 'Coachella', date: 'Apr 2024', color: 'gold' },
-  { name: 'Factory Town', date: 'Dec 2023', color: 'red' },
+  { name: 'Tomorrowland', date: 'Jul 2024', color: 'gold', image: tomorrowlandPin },
+  { name: 'Ultra', date: 'Mar 2024', color: 'red', image: ultraPin },
+  { name: 'Berghain', date: 'Sep 2024', color: 'silver', image: berghainPin },
+  { name: 'Lost Lands', date: 'Sep 2024', color: 'green', image: lostLandsPin },
+  { name: 'Electric Forest', date: 'Jun 2024', color: 'green', image: electricForestPin },
+  { name: 'Coachella', date: 'Apr 2024', color: 'gold', image: coachellaPin },
+  { name: 'Factory Town', date: 'Dec 2023', color: 'silver', image: factoryTownPin },
+  { name: 'Lollapalooza', date: 'Aug 2023', color: 'purple', image: lollapaloozaPin },
 ];
 
 export const TreasureChestTab = () => {
