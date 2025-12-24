@@ -51,7 +51,7 @@ export const CollectTab = () => {
           className="w-full"
         >
           <Plus className="w-5 h-5 mr-2" />
-          Add New Set
+          Mine a Gem
         </Button>
       )}
 
