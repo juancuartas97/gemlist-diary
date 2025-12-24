@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, User as UserIcon, LogOut, User, Plus } from 'lucide-react';
+import { Home, Gem, User as UserIcon, LogOut, User, Plus } from 'lucide-react';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { GemIcon } from '@/components/GemIcon';
+import { HomeTab } from '@/components/tabs/HomeTab';
 import { CollectTab } from '@/components/tabs/CollectTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Tab = 'treasure' | 'profile';
+type Tab = 'home' | 'treasure' | 'profile';
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'home', label: 'Home', icon: Home },
   { id: 'treasure', label: 'Treasure Chest', icon: Gem },
   { id: 'profile', label: 'Profile', icon: UserIcon },
 ];
 
 const AppShell = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('treasure');
+  const [activeTab, setActiveTab] = useState<Tab>('home');
   const [showProfile, setShowProfile] = useState(false);
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();
@@ -93,6 +95,7 @@ const AppShell = () => {
 
         {/* Content */}
         <main className="flex-1 px-4 py-6 pb-24 overflow-y-auto">
+          {activeTab === 'home' && <HomeTab />}
           {activeTab === 'treasure' && <CollectTab />}
           {activeTab === 'profile' && <ProfileTab />}
         </main>
