@@ -173,6 +173,62 @@
   pointer-events: none;
 }
 
+/* The Lid - Brushed Metal Trophy Case */
+.trophy-lid {
+  position: relative;
+  background: linear-gradient(180deg, 
+    #1a1a1a 0%, 
+    #0f0f0f 50%,
+    #151515 100%
+  );
+  border-radius: 1rem;
+  overflow: hidden;
+  border-bottom: 1px solid hsl(0 0% 100% / 0.1);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.8),
+    0 12px 24px -8px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 hsl(0 0% 100% / 0.05);
+}
+
+.trophy-lid-texture {
+  position: absolute;
+  inset: 0;
+  background: 
+    /* Horizontal brushed lines */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      hsl(0 0% 100% / 0.02) 1px,
+      hsl(0 0% 100% / 0.02) 2px
+    ),
+    /* Subtle noise effect via radial gradients */
+    radial-gradient(ellipse at 20% 50%, hsl(0 0% 100% / 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, hsl(0 0% 100% / 0.015) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.trophy-lid-edge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    hsl(40 70% 55% / 0.4) 20%,
+    hsl(40 80% 65% / 0.6) 50%,
+    hsl(40 70% 55% / 0.4) 80%,
+    transparent 100%
+  );
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Legacy trophy-case styles for backwards compatibility */
 .trophy-case {
   position: relative;
   background: linear-gradient(180deg, 
