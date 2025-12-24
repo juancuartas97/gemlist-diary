@@ -9,7 +9,7 @@ export const ProfileTab = () => {
   const sets = getSets();
   const tasteProfile = getTasteProfile();
   const recentSets = sets.slice(0, 5);
-  const topGenres = Object.entries(tasteProfile).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topGenres = tasteProfile.topGenres.slice(0, 5);
 
   const displayName = profile?.display_name || user?.email?.split('@')[0] || 'Raver';
 
@@ -36,16 +36,16 @@ export const ProfileTab = () => {
         <TasteMapVisual />
         
         <div className="mt-4 space-y-3">
-          {topGenres.map(([genre, weight]) => (
-            <div key={genre} className="flex items-center gap-3">
-              <span className="text-sm font-medium text-foreground w-24 truncate">{genre}</span>
+          {topGenres.map((genre) => (
+            <div key={genre.name} className="flex items-center gap-3">
+              <span className="text-sm font-medium text-foreground w-24 truncate">{genre.name}</span>
               <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-primary to-primary/60 rounded-full transition-all"
-                  style={{ width: `${weight}%` }}
+                  style={{ width: `${genre.weight}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground w-10 text-right">{weight}%</span>
+              <span className="text-xs text-muted-foreground w-10 text-right">{genre.weight}%</span>
             </div>
           ))}
         </div>
@@ -82,7 +82,7 @@ export const ProfileTab = () => {
         </div>
         <div className="glass-card p-4 rounded-xl text-center">
           <p className="text-lg font-bold text-foreground truncate">
-            {topGenres[0]?.[0] || 'N/A'}
+            {topGenres[0]?.name || 'N/A'}
           </p>
           <p className="text-xs text-muted-foreground">Top Genre</p>
         </div>
