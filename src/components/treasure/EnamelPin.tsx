@@ -4,6 +4,7 @@ interface FestivalBadge {
   name: string;
   date: string;
   color: 'silver' | 'gold' | 'green' | 'purple' | 'red' | 'blue';
+  image?: string; // Optional image asset
 }
 
 interface EnamelPinProps {
@@ -46,6 +47,55 @@ const colorConfig = {
 
 export const EnamelPin = ({ badge }: EnamelPinProps) => {
   const config = colorConfig[badge.color];
+  
+  // If the badge has a custom image, render the image-based pin
+  if (badge.image) {
+    return (
+      <div className="flex flex-col items-center gap-2 group cursor-pointer flex-shrink-0">
+        {/* The Pin with Image */}
+        <div 
+          className="relative transition-all duration-300 ease-out group-hover:scale-105 group-hover:-translate-y-1"
+        >
+          <div 
+            className="relative w-20 h-20"
+            style={{
+              filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.6))'
+            }}
+          >
+            <img 
+              src={badge.image} 
+              alt={badge.name}
+              className="w-full h-full object-contain"
+            />
+            
+            {/* Hover glow effect */}
+            <div 
+              className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              style={{
+                boxShadow: `0 0 24px ${config.glow}`
+              }}
+            />
+          </div>
+          
+          {/* Cast Shadow */}
+          <div 
+            className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-14 h-3 bg-black/40 rounded-full blur-md
+                       group-hover:w-12 group-hover:blur-lg transition-all duration-300"
+          />
+        </div>
+        
+        {/* Typography */}
+        <div className="text-center mt-1">
+          <p className="text-[10px] font-bold text-white/90 uppercase tracking-widest leading-tight">
+            {badge.name}
+          </p>
+          <p className="text-[9px] text-white/50 mt-0.5">
+            {badge.date}
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="flex flex-col items-center gap-2 group cursor-pointer flex-shrink-0">
