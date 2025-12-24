@@ -7,6 +7,7 @@ import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf } from '@/components/treasure/GlassShelf';
 import { GemStack } from '@/components/treasure/GemStack';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
+import edcVegasPin from '@/assets/pins/edc-vegas.png';
 
 // Group sets by artist name for stacking
 const groupByArtist = (sets: SetEntry[]) => {
@@ -22,12 +23,12 @@ const groupByArtist = (sets: SetEntry[]) => {
 
 // Festival badges data
 const festivalBadges: FestivalBadge[] = [
+  { name: 'EDC Vegas', date: 'May 2024', color: 'purple', image: edcVegasPin },
   { name: 'Berghain', date: 'Sep 2024', color: 'silver' },
   { name: 'Lost Lands', date: 'Sep 2024', color: 'green' },
   { name: 'Electric Forest', date: 'Jun 2024', color: 'purple' },
   { name: 'Coachella', date: 'Apr 2024', color: 'gold' },
   { name: 'Factory Town', date: 'Dec 2023', color: 'red' },
-  { name: 'Lollapalooza', date: 'Aug 2023', color: 'blue' },
 ];
 
 export const TreasureChestTab = () => {
