@@ -1,25 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, Map, CalendarDays, LogOut, User } from 'lucide-react';
+import { Gem, User as UserIcon, LogOut, User, Plus } from 'lucide-react';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { GemIcon } from '@/components/GemIcon';
 import { CollectTab } from '@/components/tabs/CollectTab';
-import { TasteMapTab } from '@/components/tabs/TasteMapTab';
-import { EventsTab } from '@/components/tabs/EventsTab';
+import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-type Tab = 'collect' | 'taste' | 'events';
+type Tab = 'treasure' | 'profile';
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'collect', label: 'Collect', icon: Gem },
-  { id: 'taste', label: 'Taste Map', icon: Map },
-  { id: 'events', label: 'Events', icon: CalendarDays },
+  { id: 'treasure', label: 'Treasure Chest', icon: Gem },
+  { id: 'profile', label: 'Profile', icon: UserIcon },
 ];
 
 const AppShell = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('collect');
+  const [activeTab, setActiveTab] = useState<Tab>('treasure');
   const [showProfile, setShowProfile] = useState(false);
   const navigate = useNavigate();
   const { user, profile, loading, signOut } = useAuth();
@@ -93,38 +91,39 @@ const AppShell = () => {
           </div>
         </header>
 
-        {/* Tab bar */}
-        <div className="sticky top-[60px] z-10 glass-card border-t-0 rounded-none px-2 py-2">
-          <div className="flex">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'flex-1 flex flex-col items-center gap-1 py-2 rounded-xl transition-all duration-300',
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <Icon className={cn('w-5 h-5', isActive && 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.8)]')} />
-                  <span className="text-xs font-medium">{tab.label}</span>
-                </button>
-              );
-            })}
+        {/* Content */}
+        <main className="flex-1 px-4 py-6 pb-24 overflow-y-auto">
+          {activeTab === 'treasure' && <CollectTab />}
+          {activeTab === 'profile' && <ProfileTab />}
+        </main>
+
+        {/* Bottom Tab bar */}
+        <div className="fixed bottom-0 left-0 right-0 z-20">
+          <div className="max-w-[420px] mx-auto glass-card border-b-0 rounded-b-none px-4 py-3">
+            <div className="flex items-center justify-around">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all duration-300',
+                      isActive
+                        ? 'text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className={cn('w-6 h-6', isActive && 'drop-shadow-[0_0_8px_hsl(var(--primary)/0.8)]')} />
+                    <span className="text-xs font-medium">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-
-        {/* Content */}
-        <main className="flex-1 px-4 py-6 overflow-y-auto">
-          {activeTab === 'collect' && <CollectTab />}
-          {activeTab === 'taste' && <TasteMapTab />}
-          {activeTab === 'events' && <EventsTab />}
-        </main>
       </div>
     </div>
   );
