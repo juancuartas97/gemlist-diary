@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { hasCompletedOnboarding, getUser } from '@/lib/storage';
+import { useAuth } from '@/hooks/useAuth';
+import { hasCompletedOnboarding } from '@/lib/storage';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const user = getUser();
+    if (loading) return;
+
     const onboarded = hasCompletedOnboarding();
 
     if (user) {
@@ -16,7 +19,7 @@ const Index = () => {
     } else {
       navigate('/onboarding');
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
   return null;
 };

@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { GemIcon } from '@/components/GemIcon';
-import { setUser } from '@/lib/storage';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
+const emailSchema = z.string().email('Please enter a valid email');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,19 +18,62 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, signIn, signUp } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      navigate('/app');
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Create local session (no real auth for prototype)
-    setUser({
-      id: crypto.randomUUID(),
-      displayName: displayName || email.split('@')[0],
-      email,
-    });
+    // Validate inputs
+    const emailResult = emailSchema.safeParse(email);
+    if (!emailResult.success) {
+      toast.error(emailResult.error.errors[0].message);
+      return;
+    }
     
-    navigate('/app');
+    const passwordResult = passwordSchema.safeParse(password);
+    if (!passwordResult.success) {
+      toast.error(passwordResult.error.errors[0].message);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            toast.error('Invalid email or password');
+          } else {
+            toast.error(error.message);
+          }
+        } else {
+          toast.success('Welcome back!');
+          navigate('/app');
+        }
+      } else {
+        const { error } = await signUp(email, password, displayName || email.split('@')[0]);
+        if (error) {
+          if (error.message.includes('already registered')) {
+            toast.error('This email is already registered. Try logging in.');
+          } else {
+            toast.error(error.message);
+          }
+        } else {
+          toast.success('Account created! Check your email to confirm.');
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -139,8 +187,9 @@ const Auth = () => {
             variant="neon"
             size="lg"
             className="w-full mt-6"
+            disabled={isLoading}
           >
-            {isLogin ? 'Log In' : 'Create Account'}
+            {isLoading ? 'Loading...' : isLogin ? 'Log In' : 'Create Account'}
           </Button>
 
           {/* Social divider */}
@@ -157,7 +206,7 @@ const Auth = () => {
 
           {/* Social buttons */}
           <div className="grid grid-cols-2 gap-4">
-            <Button type="button" variant="glass" className="gap-2">
+            <Button type="button" variant="glass" className="gap-2" disabled>
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -178,7 +227,7 @@ const Auth = () => {
               </svg>
               Google
             </Button>
-            <Button type="button" variant="glass" className="gap-2">
+            <Button type="button" variant="glass" className="gap-2" disabled>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
               </svg>

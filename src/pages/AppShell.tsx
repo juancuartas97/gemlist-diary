@@ -6,8 +6,9 @@ import { GemIcon } from '@/components/GemIcon';
 import { CollectTab } from '@/components/tabs/CollectTab';
 import { TasteMapTab } from '@/components/tabs/TasteMapTab';
 import { EventsTab } from '@/components/tabs/EventsTab';
-import { getUser, clearUser } from '@/lib/storage';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type Tab = 'collect' | 'taste' | 'events';
 
@@ -21,20 +22,31 @@ const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('collect');
   const [showProfile, setShowProfile] = useState(false);
   const navigate = useNavigate();
-  const user = getUser();
+  const { user, profile, loading, signOut } = useAuth();
 
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/auth');
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
-  const handleLogout = () => {
-    clearUser();
+  const handleLogout = async () => {
+    await signOut();
+    toast.success('Logged out successfully');
     navigate('/auth');
   };
 
-  if (!user) return null;
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-cosmic">
+        <div className="animate-pulse-glow">
+          <GemIcon className="w-16 h-16" />
+        </div>
+      </div>
+    );
+  }
+
+  const displayName = profile?.display_name || user.email?.split('@')[0] || 'Raver';
 
   return (
     <div className="min-h-screen flex flex-col bg-cosmic">
@@ -57,13 +69,18 @@ const AppShell = () => {
             >
               <User className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium text-foreground truncate max-w-[80px]">
-                {user.displayName}
+                {displayName}
               </span>
             </button>
             
             {showProfile && (
               <div className="absolute right-0 top-full mt-2 glass-card p-3 rounded-xl min-w-[160px] animate-scale-in">
-                <p className="text-sm text-muted-foreground mb-2 truncate">{user.email}</p>
+                <p className="text-sm text-muted-foreground mb-1 truncate">{user.email}</p>
+                {profile && (
+                  <p className="text-xs text-primary mb-2">
+                    {profile.raver_rank} • {profile.total_gems} gems
+                  </p>
+                )}
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-2 text-sm text-destructive hover:text-destructive/80 transition-colors w-full"
