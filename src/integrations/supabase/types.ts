@@ -14,16 +14,189 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      gems: {
+        Row: {
+          artist_name: string
+          created_at: string | null
+          event_date: string
+          gem_system: Database["public"]["Enums"]["gem_system"]
+          id: string
+          is_verified: boolean | null
+          notes: string | null
+          photo_url: string | null
+          rating: number | null
+          subgenre_id: string | null
+          updated_at: string | null
+          user_id: string
+          venue: string
+        }
+        Insert: {
+          artist_name: string
+          created_at?: string | null
+          event_date: string
+          gem_system: Database["public"]["Enums"]["gem_system"]
+          id?: string
+          is_verified?: boolean | null
+          notes?: string | null
+          photo_url?: string | null
+          rating?: number | null
+          subgenre_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          venue: string
+        }
+        Update: {
+          artist_name?: string
+          created_at?: string | null
+          event_date?: string
+          gem_system?: Database["public"]["Enums"]["gem_system"]
+          id?: string
+          is_verified?: boolean | null
+          notes?: string | null
+          photo_url?: string | null
+          rating?: number | null
+          subgenre_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          venue?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gems_subgenre_id_fkey"
+            columns: ["subgenre_id"]
+            isOneToOne: false
+            referencedRelation: "subgenres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          raver_rank: string | null
+          total_gems: number | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          raver_rank?: string | null
+          total_gems?: number | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          raver_rank?: string | null
+          total_gems?: number | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
+      subgenres: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          name: string
+          system: Database["public"]["Enums"]["gem_system"]
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          id?: string
+          name: string
+          system: Database["public"]["Enums"]["gem_system"]
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          system?: Database["public"]["Enums"]["gem_system"]
+        }
+        Relationships: []
+      }
+      taste_profiles: {
+        Row: {
+          genre_weights: Json | null
+          id: string
+          top_artists: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          genre_weights?: Json | null
+          id?: string
+          top_artists?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          genre_weights?: Json | null
+          id?: string
+          top_artists?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      gem_system:
+        | "techno"
+        | "house"
+        | "dnb"
+        | "bass"
+        | "trance"
+        | "uk"
+        | "disco"
+        | "harder"
+        | "experimental"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +323,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      gem_system: [
+        "techno",
+        "house",
+        "dnb",
+        "bass",
+        "trance",
+        "uk",
+        "disco",
+        "harder",
+        "experimental",
+      ],
+    },
   },
 } as const
