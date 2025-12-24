@@ -3,7 +3,7 @@ import { Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSets, type SetEntry } from '@/lib/storage';
 import { cn } from '@/lib/utils';
-import { EnamelPin, type FestivalPin } from '@/components/treasure/EnamelPin';
+import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf } from '@/components/treasure/GlassShelf';
 import { GemStack } from '@/components/treasure/GemStack';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
@@ -20,11 +20,14 @@ const groupByArtist = (sets: SetEntry[]) => {
   return groups;
 };
 
-// Festival pins data
-const festivalPins: FestivalPin[] = [
-  { id: '1', festival: 'edc', year: '2024' },
-  { id: '2', festival: 'tomorrowland', year: '2024' },
-  { id: '3', festival: 'ultra', year: '2024' },
+// Festival badges data
+const festivalBadges: FestivalBadge[] = [
+  { name: 'Berghain', date: 'Sep 2024', color: 'silver' },
+  { name: 'Lost Lands', date: 'Sep 2024', color: 'green' },
+  { name: 'Electric Forest', date: 'Jun 2024', color: 'purple' },
+  { name: 'Coachella', date: 'Apr 2024', color: 'gold' },
+  { name: 'Factory Town', date: 'Dec 2023', color: 'red' },
+  { name: 'Lollapalooza', date: 'Aug 2023', color: 'blue' },
 ];
 
 export const TreasureChestTab = () => {
@@ -52,19 +55,26 @@ export const TreasureChestTab = () => {
           <p className="text-xs text-muted-foreground/60 mt-1 tracking-widest uppercase">Your Collection</p>
         </div>
 
-        {/* The Lid - Trophy Case with Festival Pins */}
-        <div className="trophy-case mx-4 mb-8">
-          <div className="trophy-case-texture" />
-          <div className="relative z-10 flex justify-center items-center gap-4 py-6 px-4">
-            {festivalPins.map((pin, i) => (
+        {/* The Lid - Trophy Case with Festival Badges */}
+        <div className="trophy-lid mx-4 mb-8">
+          {/* Brushed metal texture overlay */}
+          <div className="trophy-lid-texture" />
+          
+          {/* Horizontal scrollable row of pins */}
+          <div 
+            className="relative z-10 flex items-start gap-6 py-8 px-6 overflow-x-auto scrollbar-hide"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {festivalBadges.map((badge, i) => (
               <EnamelPin 
-                key={pin.id} 
-                pin={pin} 
-                tiltDeg={(i - 1) * 5} 
+                key={i} 
+                badge={badge} 
               />
             ))}
           </div>
-          <div className="trophy-case-edge" />
+          
+          {/* Bottom edge with gold accent */}
+          <div className="trophy-lid-edge" />
         </div>
 
         {/* The Shelves - Glass Archive */}
