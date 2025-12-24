@@ -4,7 +4,7 @@ import { Home, Gem, User as UserIcon, LogOut, User, Plus } from 'lucide-react';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { GemIcon } from '@/components/GemIcon';
 import { HomeTab } from '@/components/tabs/HomeTab';
-import { CollectTab } from '@/components/tabs/CollectTab';
+import { TreasureChestTab } from '@/components/tabs/TreasureChestTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -96,7 +96,7 @@ const AppShell = () => {
         {/* Content */}
         <main className="flex-1 px-4 py-6 pb-24 overflow-y-auto">
           {activeTab === 'home' && <HomeTab />}
-          {activeTab === 'treasure' && <CollectTab />}
+          {activeTab === 'treasure' && <TreasureChestTab />}
           {activeTab === 'profile' && <ProfileTab />}
         </main>
 
