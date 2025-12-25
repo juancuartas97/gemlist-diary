@@ -14,6 +14,153 @@ export type Database = {
   }
   public: {
     Tables: {
+      djs: {
+        Row: {
+          created_at: string | null
+          home_city: string | null
+          id: string
+          instagram_handle: string | null
+          primary_genre_id: string | null
+          stage_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          home_city?: string | null
+          id?: string
+          instagram_handle?: string | null
+          primary_genre_id?: string | null
+          stage_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          home_city?: string | null
+          id?: string
+          instagram_handle?: string | null
+          primary_genre_id?: string | null
+          stage_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "djs_primary_genre_id_fkey"
+            columns: ["primary_genre_id"]
+            isOneToOne: false
+            referencedRelation: "genres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_lineups: {
+        Row: {
+          created_at: string | null
+          dj_id: string
+          event_id: string
+          id: string
+          set_end_at: string | null
+          set_start_at: string | null
+          slot_order: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          dj_id: string
+          event_id: string
+          id?: string
+          set_end_at?: string | null
+          set_start_at?: string | null
+          slot_order?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          dj_id?: string
+          event_id?: string
+          id?: string
+          set_end_at?: string | null
+          set_start_at?: string | null
+          slot_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_lineups_dj_id_fkey"
+            columns: ["dj_id"]
+            isOneToOne: false
+            referencedRelation: "djs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lineups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string | null
+          end_at: string | null
+          headliner_dj_id: string | null
+          id: string
+          primary_genre_id: string | null
+          source: string
+          start_at: string
+          status: string
+          title: string
+          updated_at: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_at?: string | null
+          headliner_dj_id?: string | null
+          id?: string
+          primary_genre_id?: string | null
+          source?: string
+          start_at: string
+          status?: string
+          title: string
+          updated_at?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_at?: string | null
+          headliner_dj_id?: string | null
+          id?: string
+          primary_genre_id?: string | null
+          source?: string
+          start_at?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_headliner_dj_id_fkey"
+            columns: ["headliner_dj_id"]
+            isOneToOne: false
+            referencedRelation: "djs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_primary_genre_id_fkey"
+            columns: ["primary_genre_id"]
+            isOneToOne: false
+            referencedRelation: "genres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gems: {
         Row: {
           artist_name: string
@@ -66,6 +213,76 @@ export type Database = {
             columns: ["subgenre_id"]
             isOneToOne: false
             referencedRelation: "subgenres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      genres: {
+        Row: {
+          color_hex: string
+          created_at: string | null
+          id: string
+          name: string
+          parent_genre_id: string | null
+        }
+        Insert: {
+          color_hex: string
+          created_at?: string | null
+          id?: string
+          name: string
+          parent_genre_id?: string | null
+        }
+        Update: {
+          color_hex?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          parent_genre_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "genres_parent_genre_id_fkey"
+            columns: ["parent_genre_id"]
+            isOneToOne: false
+            referencedRelation: "genres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_pulse_votes: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          lat: number | null
+          lng: number | null
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_pulse_votes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -154,6 +371,83 @@ export type Database = {
         }
         Relationships: []
       }
+      user_gems: {
+        Row: {
+          collected_at: string
+          created_at: string | null
+          dj_id: string
+          event_date: string
+          event_id: string | null
+          facet_ratings: Json | null
+          id: string
+          is_rated: boolean | null
+          primary_genre_id: string
+          private_note: string | null
+          updated_at: string | null
+          user_id: string
+          venue_id: string | null
+        }
+        Insert: {
+          collected_at?: string
+          created_at?: string | null
+          dj_id: string
+          event_date: string
+          event_id?: string | null
+          facet_ratings?: Json | null
+          id?: string
+          is_rated?: boolean | null
+          primary_genre_id: string
+          private_note?: string | null
+          updated_at?: string | null
+          user_id: string
+          venue_id?: string | null
+        }
+        Update: {
+          collected_at?: string
+          created_at?: string | null
+          dj_id?: string
+          event_date?: string
+          event_id?: string | null
+          facet_ratings?: Json | null
+          id?: string
+          is_rated?: boolean | null
+          primary_genre_id?: string
+          private_note?: string | null
+          updated_at?: string | null
+          user_id?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_gems_dj_id_fkey"
+            columns: ["dj_id"]
+            isOneToOne: false
+            referencedRelation: "djs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gems_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gems_primary_genre_id_fkey"
+            columns: ["primary_genre_id"]
+            isOneToOne: false
+            referencedRelation: "genres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gems_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -169,6 +463,48 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      venues: {
+        Row: {
+          capacity: number | null
+          city: string
+          country: string
+          created_at: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          state: string | null
+          updated_at: string | null
+          venue_type: string
+        }
+        Insert: {
+          capacity?: number | null
+          city: string
+          country: string
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          state?: string | null
+          updated_at?: string | null
+          venue_type: string
+        }
+        Update: {
+          capacity?: number | null
+          city?: string
+          country?: string
+          created_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          state?: string | null
+          updated_at?: string | null
+          venue_type?: string
         }
         Relationships: []
       }

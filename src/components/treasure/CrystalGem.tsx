@@ -1,38 +1,36 @@
-import { type SetEntry, gemColors } from '@/lib/storage';
+import { type UserGem } from '@/hooks/useGemData';
 import { cn } from '@/lib/utils';
 
 interface CrystalGemProps {
-  gem: SetEntry;
+  gem: UserGem;
   delay?: number;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
 }
 
-const gemGlowColors: Record<string, { main: string; light: string; dark: string }> = {
-  Emerald: { 
-    main: 'hsl(var(--gem-emerald))', 
-    light: 'hsl(145, 80%, 60%)', 
-    dark: 'hsl(145, 90%, 25%)' 
-  },
-  Sapphire: { 
-    main: 'hsl(var(--gem-sapphire))', 
-    light: 'hsl(220, 90%, 65%)', 
-    dark: 'hsl(220, 95%, 30%)' 
-  },
-  Ruby: { 
-    main: 'hsl(var(--gem-ruby))', 
-    light: 'hsl(350, 85%, 55%)', 
-    dark: 'hsl(350, 90%, 25%)' 
-  },
-  Amethyst: { 
-    main: 'hsl(var(--gem-amethyst))', 
-    light: 'hsl(280, 80%, 65%)', 
-    dark: 'hsl(280, 85%, 30%)' 
-  },
+// Helper to convert hex to HSL-like values for gradient
+const hexToRgb = (hex: string) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 30, g: 140, b: 106 }; // Default emerald
+};
+
+const adjustColor = (hex: string, amount: number) => {
+  const rgb = hexToRgb(hex);
+  const adjust = (c: number) => Math.max(0, Math.min(255, c + amount));
+  return `rgb(${adjust(rgb.r)}, ${adjust(rgb.g)}, ${adjust(rgb.b)})`;
 };
 
 export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: CrystalGemProps) => {
-  const colors = gemGlowColors[gem.gemType] || gemGlowColors.Ruby;
+  const baseColor = gem.genre?.color_hex || '#1E8C6A';
+  const colors = {
+    main: baseColor,
+    light: adjustColor(baseColor, 60),
+    dark: adjustColor(baseColor, -40),
+  };
   
   const sizes = {
     sm: { container: 'w-12 h-10', gem: 48 },
@@ -40,7 +38,7 @@ export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: Cr
     lg: { container: 'w-20 h-18', gem: 80 },
   };
 
-  const gemSize = sizes[size].gem;
+  const djName = gem.dj?.stage_name || 'Unknown';
 
   return (
     <div 
@@ -92,13 +90,6 @@ export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: Cr
               <stop offset="0%" stopColor={colors.main} stopOpacity="0.95" />
               <stop offset="50%" stopColor={colors.dark} stopOpacity="1" />
               <stop offset="100%" stopColor={colors.dark} stopOpacity="0.8" />
-            </linearGradient>
-
-            {/* Highlight shine */}
-            <linearGradient id={`shine-${gem.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="white" stopOpacity="0.8" />
-              <stop offset="50%" stopColor="white" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="white" stopOpacity="0" />
             </linearGradient>
 
             {/* Fire/dispersion effect */}
@@ -209,7 +200,7 @@ export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: Cr
       {/* DJ Label */}
       {showLabel && (
         <div className="mt-3 text-center">
-          <span className="text-[11px] text-foreground/80 font-medium tracking-wide">{gem.djName}</span>
+          <span className="text-[11px] text-foreground/80 font-medium tracking-wide">{djName}</span>
         </div>
       )}
     </div>
