@@ -8,158 +8,207 @@ interface CrystalGemProps {
   showLabel?: boolean;
 }
 
-const gemGlowColors: Record<string, string> = {
-  Emerald: 'hsl(var(--gem-emerald))',
-  Sapphire: 'hsl(var(--gem-sapphire))',
-  Ruby: 'hsl(var(--gem-ruby))',
-  Amethyst: 'hsl(var(--gem-amethyst))',
+const gemGlowColors: Record<string, { main: string; light: string; dark: string }> = {
+  Emerald: { 
+    main: 'hsl(var(--gem-emerald))', 
+    light: 'hsl(145, 80%, 60%)', 
+    dark: 'hsl(145, 90%, 25%)' 
+  },
+  Sapphire: { 
+    main: 'hsl(var(--gem-sapphire))', 
+    light: 'hsl(220, 90%, 65%)', 
+    dark: 'hsl(220, 95%, 30%)' 
+  },
+  Ruby: { 
+    main: 'hsl(var(--gem-ruby))', 
+    light: 'hsl(350, 85%, 55%)', 
+    dark: 'hsl(350, 90%, 25%)' 
+  },
+  Amethyst: { 
+    main: 'hsl(var(--gem-amethyst))', 
+    light: 'hsl(280, 80%, 65%)', 
+    dark: 'hsl(280, 85%, 30%)' 
+  },
 };
 
 export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: CrystalGemProps) => {
-  const glowColor = gemGlowColors[gem.gemType] || gemGlowColors.Emerald;
+  const colors = gemGlowColors[gem.gemType] || gemGlowColors.Ruby;
   
   const sizes = {
-    sm: 'w-10 h-12',
-    md: 'w-14 h-16',
-    lg: 'w-18 h-20',
+    sm: { container: 'w-12 h-10', gem: 48 },
+    md: { container: 'w-16 h-14', gem: 64 },
+    lg: { container: 'w-20 h-18', gem: 80 },
   };
+
+  const gemSize = sizes[size].gem;
 
   return (
     <div 
       className="crystal-gem-container group cursor-pointer flex flex-col items-center"
       style={{ animationDelay: `${delay}s` }}
     >
-      {/* Gem Glow - Outer aura */}
+      {/* Outer Glow Aura */}
       <div 
-        className="absolute blur-2xl opacity-50 group-hover:opacity-70 transition-opacity duration-500"
+        className="absolute blur-3xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 rounded-full"
         style={{ 
-          background: `radial-gradient(circle, ${glowColor} 0%, transparent 60%)`,
-          width: '120%',
-          height: '120%',
+          background: `radial-gradient(circle, ${colors.main} 0%, transparent 70%)`,
+          width: '150%',
+          height: '150%',
           top: '50%',
           left: '50%',
-          transform: 'translate(-50%, -40%)',
+          transform: 'translate(-50%, -50%)',
         }}
       />
       
-      {/* Crystal Body */}
+      {/* Brilliant Cut Diamond */}
       <div className={cn(
-        "crystal-gem relative transition-all duration-300",
+        "relative transition-all duration-300",
         "group-hover:scale-110 group-hover:-translate-y-2",
-        sizes[size]
+        sizes[size].container
       )}>
-        {/* Glassmorphism Crystal with SVG */}
-        <svg viewBox="0 0 100 120" className="w-full h-full drop-shadow-2xl">
+        <svg 
+          viewBox="0 0 100 85" 
+          className="w-full h-full drop-shadow-2xl"
+          style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))' }}
+        >
           <defs>
-            {/* Main glassmorphism gradient */}
-            <linearGradient id={`glass-grad-${gem.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            {/* Main body gradient - glass effect */}
+            <linearGradient id={`body-${gem.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={colors.light} stopOpacity="0.9" />
+              <stop offset="30%" stopColor={colors.main} stopOpacity="0.85" />
+              <stop offset="70%" stopColor={colors.dark} stopOpacity="0.95" />
+              <stop offset="100%" stopColor={colors.main} stopOpacity="0.9" />
+            </linearGradient>
+
+            {/* Crown gradient - top facets */}
+            <linearGradient id={`crown-${gem.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.5" />
+              <stop offset="40%" stopColor={colors.light} stopOpacity="0.7" />
+              <stop offset="100%" stopColor={colors.main} stopOpacity="0.9" />
+            </linearGradient>
+
+            {/* Pavilion gradient - bottom point */}
+            <linearGradient id={`pavilion-${gem.id}`} x1="50%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stopColor={colors.main} stopOpacity="0.95" />
+              <stop offset="50%" stopColor={colors.dark} stopOpacity="1" />
+              <stop offset="100%" stopColor={colors.dark} stopOpacity="0.8" />
+            </linearGradient>
+
+            {/* Highlight shine */}
+            <linearGradient id={`shine-${gem.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="white" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="white" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="white" stopOpacity="0" />
+            </linearGradient>
+
+            {/* Fire/dispersion effect */}
+            <radialGradient id={`fire-${gem.id}`} cx="30%" cy="30%">
               <stop offset="0%" stopColor="white" stopOpacity="0.6" />
-              <stop offset="20%" stopColor={glowColor} stopOpacity="0.4" />
-              <stop offset="50%" stopColor={glowColor} stopOpacity="0.25" />
-              <stop offset="80%" stopColor={glowColor} stopOpacity="0.4" />
-              <stop offset="100%" stopColor="white" stopOpacity="0.2" />
-            </linearGradient>
-            
-            {/* Inner color fill */}
-            <linearGradient id={`inner-${gem.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={glowColor} stopOpacity="0.3" />
-              <stop offset="50%" stopColor={glowColor} stopOpacity="0.5" />
-              <stop offset="100%" stopColor={glowColor} stopOpacity="0.3" />
-            </linearGradient>
-            
+              <stop offset="50%" stopColor={colors.light} stopOpacity="0.4" />
+              <stop offset="100%" stopColor="transparent" stopOpacity="0" />
+            </radialGradient>
+
             {/* Glow filter */}
             <filter id={`glow-${gem.id}`} x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            
-            {/* Glass blur effect */}
-            <filter id={`blur-${gem.id}`}>
-              <feGaussianBlur stdDeviation="0.5" />
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
             </filter>
           </defs>
+
+          {/* === BRILLIANT CUT DIAMOND SHAPE === */}
           
-          {/* Background glow shape */}
-          <polygon 
-            points="50,5 90,25 90,85 50,115 10,85 10,25" 
-            fill={glowColor}
-            fillOpacity="0.15"
+          {/* Background glow */}
+          <ellipse 
+            cx="50" cy="35" rx="45" ry="25" 
+            fill={colors.main} 
+            fillOpacity="0.15" 
             filter={`url(#glow-${gem.id})`}
           />
-          
-          {/* Main Crystal Shape - Glassmorphism body */}
+
+          {/* CROWN (top section) */}
+          {/* Table facet - flat top */}
           <polygon 
-            points="50,5 90,25 90,85 50,115 10,85 10,25" 
-            fill={`url(#glass-grad-${gem.id})`}
+            points="30,20 70,20 65,28 35,28" 
+            fill={`url(#crown-${gem.id})`}
             stroke="white"
-            strokeOpacity="0.3"
-            strokeWidth="1"
-            className="transition-all duration-300"
+            strokeOpacity="0.2"
+            strokeWidth="0.5"
           />
-          
-          {/* Inner color core */}
+
+          {/* Star facets - around table */}
+          <polygon points="30,20 35,28 25,32 15,25" fill={colors.light} fillOpacity="0.8" stroke="white" strokeOpacity="0.15" strokeWidth="0.3" />
+          <polygon points="70,20 85,25 75,32 65,28" fill={colors.main} fillOpacity="0.7" stroke="white" strokeOpacity="0.15" strokeWidth="0.3" />
+
+          {/* Bezel facets - upper crown */}
+          <polygon points="15,25 25,32 20,38 5,32" fill={colors.main} fillOpacity="0.85" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="85,25 95,32 80,38 75,32" fill={colors.dark} fillOpacity="0.9" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+
+          {/* Upper girdle facets */}
+          <polygon points="25,32 35,28 40,38 20,38" fill={`url(#body-${gem.id})`} stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="35,28 50,30 55,38 40,38" fill={colors.light} fillOpacity="0.75" stroke="white" strokeOpacity="0.15" strokeWidth="0.3" />
+          <polygon points="50,30 65,28 60,38 55,38" fill={colors.main} fillOpacity="0.8" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="65,28 75,32 80,38 60,38" fill={colors.dark} fillOpacity="0.85" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+
+          {/* Girdle - thin middle band */}
           <polygon 
-            points="50,15 80,30 80,80 50,105 20,80 20,30" 
-            fill={`url(#inner-${gem.id})`}
+            points="5,32 20,38 40,38 55,38 60,38 80,38 95,32 80,40 60,42 55,42 40,42 20,40" 
+            fill={colors.main} 
+            fillOpacity="0.95"
+            stroke="white"
+            strokeOpacity="0.2"
+            strokeWidth="0.5"
           />
+
+          {/* PAVILION (bottom section) */}
+          {/* Main pavilion facets */}
+          <polygon points="5,32 20,40 50,85" fill={colors.main} fillOpacity="0.9" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="20,40 40,42 50,85" fill={`url(#pavilion-${gem.id})`} stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="40,42 55,42 50,85" fill={colors.dark} fillOpacity="0.95" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="55,42 60,42 50,85" fill={colors.main} fillOpacity="0.85" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="60,42 80,40 50,85" fill={colors.dark} fillOpacity="0.9" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+          <polygon points="80,40 95,32 50,85" fill={colors.main} fillOpacity="0.8" stroke="white" strokeOpacity="0.1" strokeWidth="0.3" />
+
+          {/* Internal facet reflections */}
+          <polygon points="30,45 50,70 40,50" fill="white" fillOpacity="0.15" />
+          <polygon points="70,45 60,50 50,70" fill="white" fillOpacity="0.1" />
+          <polygon points="45,55 55,55 50,75" fill={colors.light} fillOpacity="0.2" />
+
+          {/* Fire/dispersion highlights */}
+          <ellipse cx="35" cy="30" rx="8" ry="5" fill={`url(#fire-${gem.id})`} />
           
-          {/* Top Facet - Bright highlight */}
-          <polygon 
-            points="50,5 90,25 50,45 10,25" 
-            fill="white"
-            fillOpacity="0.45"
-          />
-          
-          {/* Left Facet - Subtle light */}
-          <polygon 
-            points="10,25 50,45 50,115 10,85" 
-            fill="white"
-            fillOpacity="0.15"
-          />
-          
-          {/* Right Facet - Darker */}
-          <polygon 
-            points="90,25 90,85 50,115 50,45" 
-            fill="black"
-            fillOpacity="0.1"
-          />
-          
-          {/* Center vertical highlight */}
-          <polygon 
-            points="45,45 55,45 55,100 50,115 45,100" 
-            fill="white"
-            fillOpacity="0.15"
-          />
-          
-          {/* Sparkles */}
-          <circle cx="35" cy="40" r="4" fill="white" fillOpacity="0.9">
-            <animate attributeName="opacity" values="0.9;0.4;0.9" dur="2s" repeatCount="indefinite" />
+          {/* Main shine highlight on table */}
+          <polygon points="32,21 45,21 42,26 34,26" fill="white" fillOpacity="0.6" />
+          <polygon points="33,22 40,22 38,25 35,25" fill="white" fillOpacity="0.8" />
+
+          {/* Secondary sparkles */}
+          <circle cx="38" cy="24" r="1.5" fill="white" fillOpacity="0.9">
+            <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite" />
           </circle>
-          <circle cx="65" cy="35" r="2.5" fill="white" fillOpacity="0.7">
+          <circle cx="62" cy="30" r="1" fill="white" fillOpacity="0.7">
             <animate attributeName="opacity" values="0.7;0.3;0.7" dur="2.5s" repeatCount="indefinite" />
           </circle>
-          <circle cx="50" cy="60" r="2" fill="white" fillOpacity="0.5">
-            <animate attributeName="opacity" values="0.5;0.2;0.5" dur="3s" repeatCount="indefinite" />
+          <circle cx="25" cy="34" r="0.8" fill="white" fillOpacity="0.6">
+            <animate attributeName="opacity" values="0.6;0.2;0.6" dur="3s" repeatCount="indefinite" />
           </circle>
-          
-          {/* Edge highlight lines */}
-          <line x1="50" y1="5" x2="90" y2="25" stroke="white" strokeOpacity="0.5" strokeWidth="1" />
-          <line x1="50" y1="5" x2="10" y2="25" stroke="white" strokeOpacity="0.4" strokeWidth="1" />
+
+          {/* Edge highlights */}
+          <line x1="30" y1="20" x2="70" y2="20" stroke="white" strokeOpacity="0.5" strokeWidth="0.8" />
+          <line x1="5" y1="32" x2="50" y2="85" stroke="white" strokeOpacity="0.2" strokeWidth="0.5" />
+          <line x1="95" y1="32" x2="50" y2="85" stroke="white" strokeOpacity="0.15" strokeWidth="0.5" />
         </svg>
       </div>
 
       {/* Reflection on Surface */}
       <div 
-        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-14 h-8 blur-lg opacity-50"
-        style={{ background: `radial-gradient(ellipse, ${glowColor} 0%, transparent 70%)` }}
+        className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-16 h-6 blur-xl opacity-60"
+        style={{ 
+          background: `radial-gradient(ellipse at center, ${colors.main} 0%, transparent 70%)`,
+        }}
       />
 
-      {/* DJ Label - Always visible */}
+      {/* DJ Label */}
       {showLabel && (
-        <div className="mt-2 text-center">
+        <div className="mt-3 text-center">
           <span className="text-[11px] text-foreground/80 font-medium tracking-wide">{gem.djName}</span>
         </div>
       )}
