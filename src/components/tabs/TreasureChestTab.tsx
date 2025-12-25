@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getSets, type SetEntry } from '@/lib/storage';
+import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf } from '@/components/treasure/GlassShelf';
-import { GemStack } from '@/components/treasure/GemStack';
+import { GemCluster } from '@/components/treasure/GemCluster';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
 import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
@@ -16,18 +17,6 @@ import berghainPin from '@/assets/pins/berghain.png';
 import electricForestPin from '@/assets/pins/electric-forest.png';
 import coachellaPin from '@/assets/pins/coachella.png';
 import lostLandsPin from '@/assets/pins/lost-lands.png';
-
-// Group sets by artist name for stacking
-const groupByArtist = (sets: SetEntry[]) => {
-  const groups: Record<string, SetEntry[]> = {};
-  sets.forEach(set => {
-    if (!groups[set.djName]) {
-      groups[set.djName] = [];
-    }
-    groups[set.djName].push(set);
-  });
-  return groups;
-};
 
 // Festival badges data
 const festivalBadges: FestivalBadge[] = [
@@ -43,14 +32,20 @@ const festivalBadges: FestivalBadge[] = [
 ];
 
 export const TreasureChestTab = () => {
-  const [sets, setSets] = useState<SetEntry[]>(getSets);
+  const { user } = useAuth();
+  const { gems, loading, refetch } = useUserGems(user?.id);
   const [showAddModal, setShowAddModal] = useState(false);
   
-  const groupedSets = groupByArtist(sets);
-  const artistNames = Object.keys(groupedSets);
+  // Group gems by DJ for clustering
+  const groupedByDJ = groupGemsByDJ(gems);
+  const singleGems = Array.from(groupedByDJ.entries())
+    .filter(([_, djGems]) => djGems.length === 1)
+    .map(([_, djGems]) => djGems[0]);
+  const clusteredGems = Array.from(groupedByDJ.entries())
+    .filter(([_, djGems]) => djGems.length > 1);
 
-  const handleGemAdded = (newSet: SetEntry) => {
-    setSets([newSet, ...sets]);
+  const handleGemAdded = () => {
+    refetch();
   };
 
   return (
@@ -91,7 +86,12 @@ export const TreasureChestTab = () => {
 
         {/* The Shelves - Glass Archive */}
         <div className="glass-archive perspective-container px-4">
-          {sets.length === 0 ? (
+          {loading ? (
+            <div className="empty-vault text-center py-16">
+              <div className="empty-gem-glow mx-auto mb-4 animate-pulse" />
+              <p className="text-muted-foreground/60 text-sm">Loading your gems...</p>
+            </div>
+          ) : gems.length === 0 ? (
             <div className="empty-vault text-center py-16">
               <div className="empty-gem-glow mx-auto mb-4" />
               <p className="text-muted-foreground/60 text-sm">Your vault awaits...</p>
@@ -99,43 +99,51 @@ export const TreasureChestTab = () => {
             </div>
           ) : (
             <div className="shelves-container space-y-8">
-              {/* First Shelf - Recent Singles */}
-              <GlassShelf 
-                depth={0}
-                gems={sets.slice(0, 3).filter(s => groupedSets[s.djName].length === 1)}
-              />
+              {/* First Shelf - Single gems */}
+              {singleGems.length > 0 && (
+                <GlassShelf 
+                  depth={0}
+                  userGems={singleGems.slice(0, 3)}
+                />
+              )}
               
-              {/* Second Shelf - More gems */}
-              <GlassShelf 
-                depth={1}
-                gems={sets.slice(3, 6).filter(s => groupedSets[s.djName].length === 1)}
-              />
-
-              {/* Stacked Gems Section */}
-              {artistNames.filter(name => groupedSets[name].length > 1).length > 0 && (
-                <div className="stacks-section mt-12">
+              {/* Gem Clusters Section */}
+              {clusteredGems.length > 0 && (
+                <div className="stacks-section mt-8">
                   <h3 className="text-xs text-muted-foreground/50 uppercase tracking-widest mb-6 text-center">
                     Repeated Encounters
                   </h3>
                   <div className="flex flex-wrap justify-center gap-8">
-                    {artistNames
-                      .filter(name => groupedSets[name].length > 1)
-                      .map(artistName => (
-                        <GemStack 
-                          key={artistName}
-                          artistName={artistName}
-                          gems={groupedSets[artistName]}
+                    {clusteredGems.map(([djId, djGems]) => (
+                      <div key={djId} className="flex flex-col items-center gap-2">
+                        <GemCluster 
+                          gems={djGems}
+                          size="lg"
                         />
-                      ))}
+                        <span className="text-xs text-muted-foreground/70 text-center max-w-20 truncate">
+                          {djGems[0].dj?.stage_name || 'Unknown'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {/* Third Shelf - Deeper */}
-              <GlassShelf 
-                depth={2}
-                gems={sets.slice(6, 9)}
-              />
+              {/* Second Shelf - More single gems */}
+              {singleGems.length > 3 && (
+                <GlassShelf 
+                  depth={1}
+                  userGems={singleGems.slice(3, 6)}
+                />
+              )}
+
+              {/* Third Shelf - Even more */}
+              {singleGems.length > 6 && (
+                <GlassShelf 
+                  depth={2}
+                  userGems={singleGems.slice(6, 9)}
+                />
+              )}
             </div>
           )}
         </div>

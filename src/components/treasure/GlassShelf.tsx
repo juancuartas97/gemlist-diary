@@ -1,13 +1,13 @@
-import { type SetEntry } from '@/lib/storage';
+import { type UserGem } from '@/hooks/useGemData';
 import { CrystalGem } from './CrystalGem';
 
 interface GlassShelfProps {
   depth: number;
-  gems: SetEntry[];
+  userGems: UserGem[];
 }
 
-export const GlassShelf = ({ depth, gems }: GlassShelfProps) => {
-  if (gems.length === 0) return null;
+export const GlassShelf = ({ depth, userGems }: GlassShelfProps) => {
+  if (userGems.length === 0) return null;
   
   const scale = 1 - depth * 0.06;
   const opacity = 1 - depth * 0.1;
@@ -65,7 +65,7 @@ export const GlassShelf = ({ depth, gems }: GlassShelfProps) => {
 
         {/* Shelf Surface with Gems */}
         <div className="relative flex justify-center items-end gap-10 py-8 px-6 min-h-[140px]">
-          {gems.map((gem, i) => (
+          {userGems.map((gem, i) => (
             <CrystalGem 
               key={gem.id} 
               gem={gem}
