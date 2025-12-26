@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getSets, getTasteProfile } from '@/lib/storage';
 
 export const HomeTab = () => {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const sets = getSets();
   const tasteProfile = getTasteProfile();
   const recentSets = sets.slice(0, 4);
@@ -18,20 +18,33 @@ export const HomeTab = () => {
     return 'Good Evening';
   };
 
-  const displayName = profile?.display_name || 'Raver';
+  // Get first name from display_name or email
+  const displayName = profile?.display_name || user?.email?.split('@')[0] || 'Raver';
+  const firstName = displayName.split(' ')[0];
+  
+  // Get avatar URL - prioritize profile avatar, then user metadata (Google/Apple)
+  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
 
   return (
     <div className="space-y-6">
       {/* Greeting Header */}
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
-          <span className="text-lg font-bold text-primary">
-            {displayName.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        {avatarUrl ? (
+          <img 
+            src={avatarUrl} 
+            alt="Profile" 
+            className="w-14 h-14 rounded-full object-cover border-2 border-primary/40"
+          />
+        ) : (
+          <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
+            <span className="text-lg font-bold text-primary">
+              {firstName.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">{getGreeting()}</p>
-          <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+          <p className="text-sm text-muted-foreground">{getGreeting()}</p>
+          <h1 className="text-2xl font-bold text-foreground">{firstName}</h1>
         </div>
       </div>
 
