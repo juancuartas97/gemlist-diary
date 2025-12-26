@@ -336,7 +336,7 @@ export const addEvent = async (event: {
       headliner_dj_id: event.headliner_dj_id || null,
       end_at: event.end_at || null,
       source: 'user',
-      status: 'confirmed',
+      status: 'scheduled',
     })
     .select(`
       *,
