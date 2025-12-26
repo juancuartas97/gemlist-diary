@@ -318,6 +318,40 @@ export const addUserGem = async (gem: {
   } as UserGem;
 };
 
+export const addEvent = async (event: {
+  title: string;
+  start_at: string;
+  venue_id?: string;
+  primary_genre_id?: string;
+  headliner_dj_id?: string;
+  end_at?: string;
+}): Promise<Event | null> => {
+  const { data, error } = await supabase
+    .from('events')
+    .insert({
+      title: event.title,
+      start_at: event.start_at,
+      venue_id: event.venue_id || null,
+      primary_genre_id: event.primary_genre_id || null,
+      headliner_dj_id: event.headliner_dj_id || null,
+      end_at: event.end_at || null,
+      source: 'user',
+      status: 'confirmed',
+    })
+    .select(`
+      *,
+      venue:venues(*)
+    `)
+    .single();
+
+  if (error) {
+    console.error('Error adding event:', error);
+    return null;
+  }
+
+  return data as Event;
+};
+
 // Get genre color for gem
 export const getGenreColor = (colorHex: string) => {
   return colorHex;

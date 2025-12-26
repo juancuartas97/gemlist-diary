@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Music, MapPin, Calendar, Ticket } from 'lucide-react';
+import { Music, MapPin, Calendar, Ticket, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
 import { FacetRatingsGroup } from '@/components/FacetRating';
 import { GemMiningAnimation } from './GemMiningAnimation';
+import { AddEventModal } from './AddEventModal';
 import { 
   useGenres, 
   useDJSearch, 
@@ -77,6 +78,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   // Mining animation state
   const [showMiningAnimation, setShowMiningAnimation] = useState(false);
   const [collectedGemInfo, setCollectedGemInfo] = useState<CollectedGemInfo | null>(null);
+  
+  // Add Event Modal state
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [pendingEventQuery, setPendingEventQuery] = useState('');
   
   // Search results
   const { djs: djResults, loading: djLoading } = useDJSearch(djQuery);
@@ -156,6 +161,32 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
       if (event.primary_genre_id && !selectedGenreId && !selectedDJ?.primary_genre_id) {
         setSelectedGenreId(event.primary_genre_id);
       }
+    }
+  };
+
+  const handleCreateNewEvent = (eventName: string) => {
+    setPendingEventQuery(eventName);
+    setShowAddEventModal(true);
+  };
+
+  const handleEventCreated = (event: Event) => {
+    setSelectedEvent(event);
+    setEventQuery(event.title);
+    
+    // Auto-fill venue from created event
+    if (event.venue) {
+      setSelectedVenue(event.venue);
+      setVenueQuery(event.venue.name);
+    }
+    
+    // Auto-fill date from created event
+    if (event.start_at) {
+      setEventDate(event.start_at.split('T')[0]);
+    }
+    
+    // Auto-fill genre from created event if available
+    if (event.primary_genre_id && !selectedGenreId && !selectedDJ?.primary_genre_id) {
+      setSelectedGenreId(event.primary_genre_id);
     }
   };
 
@@ -302,6 +333,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card/95 backdrop-blur-xl border-border/30 max-w-md max-h-[85vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader>
@@ -373,6 +405,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                 }
               }}
               onSelect={handleEventSelect}
+              onCreateNew={handleCreateNewEvent}
               options={eventResults.map(event => ({
                 id: event.id,
                 label: event.title,
@@ -383,6 +416,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
               loading={eventLoading}
               placeholder="Event (optional)"
               icon={<Ticket className="w-4 h-4" />}
+              createLabel="Create event"
             />
             
             {/* Venue Autocomplete */}
@@ -497,5 +531,14 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         </form>
       </DialogContent>
     </Dialog>
+
+    {/* Add Event Modal */}
+    <AddEventModal
+      open={showAddEventModal}
+      onOpenChange={setShowAddEventModal}
+      onEventCreated={handleEventCreated}
+      initialQuery={pendingEventQuery}
+    />
+    </>
   );
 };
