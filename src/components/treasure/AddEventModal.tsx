@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, MapPin, Calendar, Music, Loader2 } from 'lucide-react';
+import { Sparkles, MapPin, Calendar, Music, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
@@ -7,11 +7,19 @@ import {
   useGenres, 
   useVenueSearch,
   addVenue,
-  addEvent,
   type Venue,
   type Genre,
-  type Event
 } from '@/hooks/useGemData';
+import {
+  useEventSeriesSearch,
+  useSeriesEditions,
+  addEventSeries,
+  addEventEdition,
+  getEditionForYear,
+  getSuggestedDate,
+  type EventSeries,
+  type EventEdition,
+} from '@/hooks/useEventSeries';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -44,9 +52,12 @@ interface AIEventDetails {
 interface AddEventModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEventCreated: (event: Event) => void;
+  onEventCreated: (edition: EventEdition) => void;
   initialQuery?: string;
 }
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 20 }, (_, i) => CURRENT_YEAR + 1 - i);
 
 export const AddEventModal = ({ 
   open, 
@@ -57,7 +68,9 @@ export const AddEventModal = ({
   const { genres } = useGenres();
   
   // Form state
-  const [eventTitle, setEventTitle] = useState(initialQuery);
+  const [seriesQuery, setSeriesQuery] = useState(initialQuery);
+  const [selectedSeries, setSelectedSeries] = useState<EventSeries | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
   const [venueQuery, setVenueQuery] = useState('');
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [selectedGenreId, setSelectedGenreId] = useState<string>('');
@@ -65,29 +78,99 @@ export const AddEventModal = ({
   const [isSearchingAI, setIsSearchingAI] = useState(false);
   const [aiDetails, setAiDetails] = useState<AIEventDetails | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [existingEdition, setExistingEdition] = useState<EventEdition | null>(null);
+  const [isCreatingNewSeries, setIsCreatingNewSeries] = useState(false);
   
   // Search results
+  const { series: seriesResults, loading: seriesLoading } = useEventSeriesSearch(seriesQuery);
   const { venues: venueResults, loading: venueLoading } = useVenueSearch(venueQuery);
+  const { editions: existingEditions } = useSeriesEditions(selectedSeries?.id || null);
 
-  // Update event title when initialQuery changes
+  // Update query when initialQuery changes
   useEffect(() => {
     if (open && initialQuery) {
-      setEventTitle(initialQuery);
+      setSeriesQuery(initialQuery);
     }
   }, [open, initialQuery]);
 
   // Reset form when modal closes
   useEffect(() => {
     if (!open) {
-      setEventTitle('');
+      setSeriesQuery('');
+      setSelectedSeries(null);
+      setSelectedYear(CURRENT_YEAR);
       setVenueQuery('');
       setSelectedVenue(null);
       setSelectedGenreId('');
       setEventDate('');
       setAiDetails(null);
       setIsSearchingAI(false);
+      setExistingEdition(null);
+      setIsCreatingNewSeries(false);
     }
   }, [open]);
+
+  // When series is selected, auto-populate venue and date
+  useEffect(() => {
+    if (selectedSeries) {
+      // Set default venue from series
+      if (selectedSeries.default_venue) {
+        setSelectedVenue(selectedSeries.default_venue);
+        setVenueQuery(selectedSeries.default_venue.name);
+      }
+      
+      // Set genre from series
+      if (selectedSeries.primary_genre_id) {
+        setSelectedGenreId(selectedSeries.primary_genre_id);
+      }
+      
+      // Set suggested date based on typical month
+      if (selectedSeries.typical_month) {
+        setEventDate(getSuggestedDate(selectedSeries.typical_month, selectedYear));
+      }
+    }
+  }, [selectedSeries]);
+
+  // Check if edition exists when year changes
+  useEffect(() => {
+    const checkEdition = async () => {
+      if (selectedSeries && selectedYear) {
+        const edition = await getEditionForYear(selectedSeries.id, selectedYear);
+        setExistingEdition(edition);
+        
+        // If edition exists, use its venue and date
+        if (edition) {
+          if (edition.venue) {
+            setSelectedVenue(edition.venue);
+            setVenueQuery(edition.venue.name);
+          }
+          if (edition.start_date) {
+            setEventDate(edition.start_date);
+          }
+        } else if (selectedSeries.typical_month) {
+          // Reset to suggested date for new year
+          setEventDate(getSuggestedDate(selectedSeries.typical_month, selectedYear));
+        }
+      }
+    };
+    checkEdition();
+  }, [selectedSeries, selectedYear]);
+
+  const handleSeriesSelect = (option: { id: string; label: string }) => {
+    const series = seriesResults.find(s => s.id === option.id);
+    if (series) {
+      setSelectedSeries(series);
+      setSeriesQuery(series.name);
+      setIsCreatingNewSeries(false);
+    }
+  };
+
+  const handleCreateNewSeries = async (name: string) => {
+    setIsCreatingNewSeries(true);
+    setSeriesQuery(name);
+    setSelectedSeries(null);
+    // Will create series on submit
+  };
 
   const handleVenueSelect = (option: { id: string; label: string }) => {
     const venue = venueResults.find(v => v.id === option.id);
@@ -98,7 +181,6 @@ export const AddEventModal = ({
   };
 
   const handleCreateNewVenue = async (venueName: string) => {
-    // Use AI details if available, otherwise defaults
     const city = aiDetails?.city || 'Unknown City';
     const country = aiDetails?.country || 'Unknown';
     
@@ -111,7 +193,7 @@ export const AddEventModal = ({
   };
 
   const searchWithAI = async () => {
-    if (!eventTitle.trim()) {
+    if (!seriesQuery.trim()) {
       toast.error('Please enter an event name first');
       return;
     }
@@ -121,7 +203,7 @@ export const AddEventModal = ({
 
     try {
       const { data, error } = await supabase.functions.invoke('search-event-details', {
-        body: { query: eventTitle }
+        body: { query: `${seriesQuery} ${selectedYear}` }
       });
 
       if (error) {
@@ -139,19 +221,11 @@ export const AddEventModal = ({
         const details = data.data as AIEventDetails;
         setAiDetails(details);
         
-        // Auto-fill fields from AI response
-        if (details.event_title) {
-          setEventTitle(details.event_title);
-        }
-        
         if (details.venue_name) {
           setVenueQuery(details.venue_name);
-          // Try to match to existing venue
-          // We'll let the user confirm or create new
         }
         
         if (details.estimated_date) {
-          // Handle both YYYY-MM-DD and YYYY-MM formats
           if (details.estimated_date.length === 7) {
             setEventDate(details.estimated_date + '-01');
           } else {
@@ -160,7 +234,6 @@ export const AddEventModal = ({
         }
         
         if (details.genre) {
-          // Try to match genre to our database
           const matchedGenre = genres.find(g => 
             g.name.toLowerCase() === details.genre?.toLowerCase() ||
             g.name.toLowerCase().includes(details.genre?.toLowerCase() || '') ||
@@ -171,7 +244,7 @@ export const AddEventModal = ({
           }
         }
 
-        toast.success(`Found details for ${details.event_title}`, {
+        toast.success(`Found details`, {
           description: details.confidence === 'low' 
             ? 'Low confidence - please verify details' 
             : undefined
@@ -188,8 +261,8 @@ export const AddEventModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!eventTitle.trim()) {
-      toast.error('Please enter an event title');
+    if (!seriesQuery.trim()) {
+      toast.error('Please enter an event name');
       return;
     }
 
@@ -201,19 +274,63 @@ export const AddEventModal = ({
     setSubmitting(true);
 
     try {
-      const newEvent = await addEvent({
-        title: eventTitle.trim(),
-        start_at: eventDate,
+      let seriesId = selectedSeries?.id;
+      
+      // Create new series if needed
+      if (!seriesId && isCreatingNewSeries) {
+        const month = eventDate ? new Date(eventDate).getMonth() + 1 : undefined;
+        const newSeries = await addEventSeries({
+          name: seriesQuery.trim(),
+          typical_month: month,
+          typical_duration_days: 3,
+          primary_genre_id: selectedGenreId || undefined,
+          default_venue_id: selectedVenue?.id,
+        });
+        
+        if (!newSeries) {
+          toast.error('Failed to create event series');
+          setSubmitting(false);
+          return;
+        }
+        
+        seriesId = newSeries.id;
+        toast.success(`Created new event series: ${newSeries.name}`);
+      }
+
+      if (!seriesId) {
+        toast.error('Please select or create an event series');
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if edition already exists
+      if (existingEdition) {
+        toast.success(`Selected: ${seriesQuery} ${selectedYear}`);
+        onEventCreated(existingEdition);
+        onOpenChange(false);
+        return;
+      }
+
+      // Create new edition
+      const dateObj = new Date(eventDate);
+      const endDate = new Date(dateObj);
+      endDate.setDate(endDate.getDate() + (selectedSeries?.typical_duration_days || 3) - 1);
+
+      const newEdition = await addEventEdition({
+        series_id: seriesId,
+        year: selectedYear,
+        start_date: eventDate,
+        end_date: endDate.toISOString().split('T')[0],
         venue_id: selectedVenue?.id,
-        primary_genre_id: selectedGenreId || undefined,
+        status: selectedYear < CURRENT_YEAR ? 'ended' : 'scheduled',
       });
 
-      if (newEvent) {
-        toast.success(`Created event: ${newEvent.title}`);
-        onEventCreated(newEvent);
+      if (newEdition) {
+        toast.success(`Created: ${seriesQuery} ${selectedYear}`);
+        onEventCreated(newEdition);
         onOpenChange(false);
       } else {
-        toast.error('Failed to create event');
+        toast.error('Failed to create event edition');
       }
     } catch (error) {
       console.error('Error creating event:', error);
@@ -224,6 +341,7 @@ export const AddEventModal = ({
   };
 
   const currentGenre = genres.find(g => g.id === selectedGenreId);
+  const displayName = selectedSeries?.name || seriesQuery;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -231,26 +349,42 @@ export const AddEventModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
             <Calendar className="w-5 h-5 text-primary" />
-            Create New Event
+            Add Event
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          {/* Event Title with AI Search */}
+          {/* Event Series Search with AI */}
           <div className="space-y-2">
             <div className="flex gap-2">
-              <Input
-                value={eventTitle}
-                onChange={(e) => setEventTitle(e.target.value)}
-                placeholder="Event name (e.g., Tomorrowland 2025)"
-                className="flex-1 bg-background/50 border-border/30"
+              <AutocompleteInput
+                value={seriesQuery}
+                onChange={(value) => {
+                  setSeriesQuery(value);
+                  if (value !== selectedSeries?.name) {
+                    setSelectedSeries(null);
+                    setIsCreatingNewSeries(false);
+                  }
+                }}
+                onSelect={handleSeriesSelect}
+                onCreateNew={handleCreateNewSeries}
+                options={seriesResults.map(series => ({
+                  id: series.id,
+                  label: series.name,
+                  sublabel: series.description || (series.default_venue ? series.default_venue.city : undefined),
+                }))}
+                loading={seriesLoading}
+                placeholder="Event name (e.g., Ultra Miami)"
+                icon={<Music className="w-4 h-4" />}
+                createLabel="Create new event"
+                className="flex-1"
               />
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 onClick={searchWithAI}
-                disabled={isSearchingAI || !eventTitle.trim()}
+                disabled={isSearchingAI || !seriesQuery.trim()}
                 className={cn(
                   "shrink-0",
                   isSearchingAI && "animate-pulse"
@@ -264,6 +398,25 @@ export const AddEventModal = ({
                 )}
               </Button>
             </div>
+            
+            {/* Status indicators */}
+            {selectedSeries && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                  Known event
+                </span>
+                {selectedSeries.first_year && (
+                  <span>Since {selectedSeries.first_year}</span>
+                )}
+              </div>
+            )}
+            {isCreatingNewSeries && (
+              <div className="flex items-center gap-2 text-xs text-amber-400">
+                <Plus className="w-3 h-3" />
+                <span>Will create new event series</span>
+              </div>
+            )}
+            
             {aiDetails && (
               <div className="text-xs text-muted-foreground bg-background/30 rounded-lg p-2 border border-border/20">
                 <div className="flex items-center gap-1 mb-1">
@@ -291,7 +444,29 @@ export const AddEventModal = ({
             )}
           </div>
 
-          {/* Venue */}
+          {/* Year Selector */}
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="bg-background/50 border-border/30">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground/50" />
+                <SelectValue placeholder="Select year" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {YEARS.map(year => (
+                <SelectItem key={year} value={String(year)}>
+                  <div className="flex items-center gap-2">
+                    {year}
+                    {existingEditions.some(e => e.year === year) && (
+                      <span className="text-xs text-primary">(exists)</span>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Venue - auto-populated but editable */}
           <AutocompleteInput
             value={venueQuery}
             onChange={(value) => {
@@ -313,7 +488,7 @@ export const AddEventModal = ({
             createLabel="Add venue"
           />
 
-          {/* Date */}
+          {/* Date - auto-populated but editable */}
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
             <Input
@@ -349,7 +524,7 @@ export const AddEventModal = ({
           </Select>
 
           {/* Preview */}
-          {eventTitle.trim() && eventDate && (
+          {displayName.trim() && eventDate && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-background/30 border border-border/20">
               <div 
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -362,13 +537,18 @@ export const AddEventModal = ({
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-sm font-medium">{eventTitle}</div>
+                <div className="text-sm font-medium">{displayName} {selectedYear}</div>
                 <div className="text-xs text-muted-foreground">
                   {selectedVenue?.name && `${selectedVenue.name} • `}
                   {new Date(eventDate).toLocaleDateString()}
                   {currentGenre && ` • ${currentGenre.name}`}
                 </div>
               </div>
+              {existingEdition && (
+                <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                  Existing
+                </span>
+              )}
             </div>
           )}
 
@@ -386,9 +566,9 @@ export const AddEventModal = ({
               type="submit" 
               variant="neon" 
               className="flex-1"
-              disabled={submitting || !eventTitle.trim() || !eventDate}
+              disabled={submitting || !seriesQuery.trim() || !eventDate}
             >
-              {submitting ? 'Creating...' : 'Create Event'}
+              {submitting ? 'Creating...' : existingEdition ? 'Select Event' : 'Create Event'}
             </Button>
           </div>
         </form>
