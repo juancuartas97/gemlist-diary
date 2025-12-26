@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Music, MapPin, Calendar, ChevronDown } from 'lucide-react';
+import { Music, MapPin, Calendar, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
@@ -8,12 +8,14 @@ import { GemMiningAnimation } from './GemMiningAnimation';
 import { 
   useGenres, 
   useDJSearch, 
-  useVenueSearch, 
+  useVenueSearch,
+  useEventSearch,
   addDJ, 
   addVenue, 
   addUserGem,
   type DJ,
   type Venue,
+  type Event,
   type Genre,
   type FacetRatings
 } from '@/hooks/useGemData';
@@ -43,6 +45,7 @@ interface AddGemModalProps {
 interface CollectedGemInfo {
   artistName: string;
   venueName?: string;
+  eventName?: string;
   eventDate: string;
   genreName: string;
   gemColor: string;
@@ -55,8 +58,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   // Form state
   const [djQuery, setDjQuery] = useState('');
   const [venueQuery, setVenueQuery] = useState('');
+  const [eventQuery, setEventQuery] = useState('');
   const [selectedDJ, setSelectedDJ] = useState<DJ | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedGenreId, setSelectedGenreId] = useState<string>('');
   const [eventDate, setEventDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
@@ -76,6 +81,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   // Search results
   const { djs: djResults, loading: djLoading } = useDJSearch(djQuery);
   const { venues: venueResults, loading: venueLoading } = useVenueSearch(venueQuery);
+  const { events: eventResults, loading: eventLoading } = useEventSearch(eventQuery);
 
   // Get color for current genre
   const currentGenre = genres.find(g => g.id === (selectedDJ?.primary_genre_id || selectedGenreId));
@@ -84,30 +90,17 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   // Reset form when modal closes
   useEffect(() => {
     if (!open) {
-      setDjQuery('');
-      setVenueQuery('');
-      setSelectedDJ(null);
-      setSelectedVenue(null);
-      setSelectedGenreId('');
-      setEventDate(new Date().toISOString().split('T')[0]);
-      setNotes('');
-      setFacetRatings({
-        sound_quality: null,
-        energy: null,
-        performance: null,
-        crowd: null,
-      });
-      setShowNewDJGenreSelect(false);
-      setShowMiningAnimation(false);
-      setCollectedGemInfo(null);
+      resetFormForNewGem();
     }
   }, [open]);
 
   const resetFormForNewGem = () => {
     setDjQuery('');
     setVenueQuery('');
+    setEventQuery('');
     setSelectedDJ(null);
     setSelectedVenue(null);
+    setSelectedEvent(null);
     setSelectedGenreId('');
     setEventDate(new Date().toISOString().split('T')[0]);
     setNotes('');
@@ -128,6 +121,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
       setSelectedDJ(dj);
       setDjQuery(dj.stage_name);
       setShowNewDJGenreSelect(false);
+      // If DJ has a genre and no genre is selected, use DJ's genre
+      if (dj.primary_genre_id && !selectedGenreId) {
+        setSelectedGenreId(dj.primary_genre_id);
+      }
     }
   };
 
@@ -136,6 +133,30 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
     setDjQuery(stageName);
     setSelectedDJ(null);
     setShowNewDJGenreSelect(true);
+  };
+
+  const handleEventSelect = (option: { id: string; label: string }) => {
+    const event = eventResults.find(e => e.id === option.id);
+    if (event) {
+      setSelectedEvent(event);
+      setEventQuery(event.title);
+      
+      // Auto-fill venue from event
+      if (event.venue) {
+        setSelectedVenue(event.venue);
+        setVenueQuery(event.venue.name);
+      }
+      
+      // Auto-fill date from event
+      if (event.start_at) {
+        setEventDate(event.start_at.split('T')[0]);
+      }
+      
+      // Auto-fill genre from event if available
+      if (event.primary_genre_id && !selectedGenreId && !selectedDJ?.primary_genre_id) {
+        setSelectedGenreId(event.primary_genre_id);
+      }
+    }
   };
 
   const handleVenueSelect = (option: { id: string; label: string }) => {
@@ -162,6 +183,17 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
     }));
   };
 
+  // Determine if form is valid for submission
+  const canSubmit = () => {
+    if (submitting) return false;
+    
+    // Must have a DJ selected OR (have a DJ name AND a genre selected)
+    if (selectedDJ) return true;
+    if (djQuery.trim() && selectedGenreId) return true;
+    
+    return false;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -181,22 +213,29 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
       let djToUse = selectedDJ;
       
       // If new DJ, create them first
-      if (!djToUse && djQuery.trim() && selectedGenreId) {
-        djToUse = await addDJ(djQuery.trim(), selectedGenreId);
-        if (!djToUse) {
-          toast.error('Failed to create DJ');
+      if (!djToUse && djQuery.trim()) {
+        if (!selectedGenreId) {
+          toast.error('Please select a genre for the new artist');
           setSubmitting(false);
           return;
         }
-      } else if (!djToUse) {
-        toast.error('Please select a genre for the new DJ');
+        djToUse = await addDJ(djQuery.trim(), selectedGenreId);
+        if (!djToUse) {
+          toast.error('Failed to create artist');
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      if (!djToUse) {
+        toast.error('Please select or create an artist');
         setSubmitting(false);
         return;
       }
 
       const genreId = djToUse.primary_genre_id || selectedGenreId;
       if (!genreId) {
-        toast.error('DJ must have a genre');
+        toast.error('Artist must have a genre');
         setSubmitting(false);
         return;
       }
@@ -207,6 +246,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         primary_genre_id: genreId,
         event_date: eventDate,
         venue_id: selectedVenue?.id,
+        event_id: selectedEvent?.id,
         facet_ratings: facetRatings,
         private_note: notes || undefined,
       });
@@ -216,6 +256,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         setCollectedGemInfo({
           artistName: djToUse.stage_name,
           venueName: selectedVenue?.name,
+          eventName: selectedEvent?.title,
           eventDate: eventDate,
           genreName: gemGenre?.name || 'Unknown',
           gemColor: gemGenre?.color_hex || '#1E8C6A',
@@ -252,6 +293,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         onContinue={handleMiningContinue}
         artistName={collectedGemInfo.artistName}
         venueName={collectedGemInfo.venueName}
+        eventName={collectedGemInfo.eventName}
         eventDate={collectedGemInfo.eventDate}
         genreName={collectedGemInfo.genreName}
         gemColor={collectedGemInfo.gemColor}
@@ -294,7 +336,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                 sublabel: dj.genre?.name || undefined,
               }))}
               loading={djLoading}
-              placeholder="DJ / Artist Name"
+              placeholder="DJ / Artist Name *"
               icon={<Music className="w-4 h-4" />}
               createLabel="Add artist"
             />
@@ -303,7 +345,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
             {showNewDJGenreSelect && (
               <Select value={selectedGenreId} onValueChange={setSelectedGenreId}>
                 <SelectTrigger className="bg-background/50 border-border/30">
-                  <SelectValue placeholder="Select genre for new artist" />
+                  <SelectValue placeholder="Select genre for new artist *" />
                 </SelectTrigger>
                 <SelectContent>
                   {genres.map(genre => (
@@ -320,6 +362,28 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                 </SelectContent>
               </Select>
             )}
+
+            {/* Event Autocomplete (optional) */}
+            <AutocompleteInput
+              value={eventQuery}
+              onChange={(value) => {
+                setEventQuery(value);
+                if (value !== selectedEvent?.title) {
+                  setSelectedEvent(null);
+                }
+              }}
+              onSelect={handleEventSelect}
+              options={eventResults.map(event => ({
+                id: event.id,
+                label: event.title,
+                sublabel: event.venue?.name 
+                  ? `${event.venue.name} • ${new Date(event.start_at).toLocaleDateString()}`
+                  : new Date(event.start_at).toLocaleDateString(),
+              }))}
+              loading={eventLoading}
+              placeholder="Event (optional)"
+              icon={<Ticket className="w-4 h-4" />}
+            />
             
             {/* Venue Autocomplete */}
             <AutocompleteInput
@@ -379,7 +443,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
           </div>
 
           {/* Selected gem preview */}
-          {(selectedDJ || selectedGenreId) && (
+          {(selectedDJ || (djQuery.trim() && selectedGenreId)) && (
             <div className="flex items-center gap-3 p-3 rounded-xl bg-background/30 border border-border/20">
               <div 
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -405,6 +469,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                 <div className="text-sm font-medium">{currentGenre?.name} Gem</div>
                 <div className="text-xs text-muted-foreground">
                   {selectedDJ?.stage_name || djQuery}
+                  {selectedEvent && <span> • {selectedEvent.title}</span>}
                 </div>
               </div>
             </div>
@@ -424,7 +489,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
               type="submit" 
               variant="neon" 
               className="flex-1"
-              disabled={submitting || (!selectedDJ && (!djQuery.trim() || !selectedGenreId))}
+              disabled={!canSubmit()}
             >
               {submitting ? 'Collecting...' : 'Collect Gem'}
             </Button>

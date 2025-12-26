@@ -9,6 +9,7 @@ interface GemMiningAnimationProps {
   onContinue: () => void;
   artistName: string;
   venueName?: string;
+  eventName?: string;
   eventDate: string;
   genreName: string;
   gemColor: string;
@@ -20,6 +21,7 @@ export const GemMiningAnimation = ({
   onContinue,
   artistName,
   venueName,
+  eventName,
   eventDate,
   genreName,
   gemColor,
@@ -299,8 +301,13 @@ export const GemMiningAnimation = ({
               <p className="text-sm text-muted-foreground">
                 {genreName} Gem
               </p>
-              {venueName && (
+              {eventName && (
                 <p className="text-sm text-muted-foreground">
+                  {eventName}
+                </p>
+              )}
+              {venueName && (
+                <p className="text-sm text-muted-foreground/80">
                   @ {venueName}
                 </p>
               )}
