@@ -261,7 +261,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card/95 backdrop-blur-xl border-border/30 max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card/95 backdrop-blur-xl border-border/30 max-w-md max-h-[85vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
             <div 
