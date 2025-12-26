@@ -105,6 +105,51 @@ export const useDJSearch = (query: string) => {
   return { djs, loading };
 };
 
+export interface Event {
+  id: string;
+  title: string;
+  start_at: string;
+  end_at: string | null;
+  venue_id: string | null;
+  venue?: Venue;
+  primary_genre_id: string | null;
+}
+
+export const useEventSearch = (query: string) => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setEvents([]);
+      return;
+    }
+
+    const searchEvents = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          venue:venues(*)
+        `)
+        .ilike('title', `%${query}%`)
+        .order('start_at', { ascending: false })
+        .limit(10);
+      
+      if (!error && data) {
+        setEvents(data as Event[]);
+      }
+      setLoading(false);
+    };
+
+    const debounce = setTimeout(searchEvents, 300);
+    return () => clearTimeout(debounce);
+  }, [query]);
+
+  return { events, loading };
+};
+
 export const useVenueSearch = (query: string) => {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(false);
@@ -239,6 +284,7 @@ export const addUserGem = async (gem: {
   primary_genre_id: string;
   event_date: string;
   venue_id?: string;
+  event_id?: string;
   facet_ratings?: {
     sound_quality: number | null;
     energy: number | null;
