@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Gem, User as UserIcon, LogOut, User, Plus } from 'lucide-react';
+import { Home, Gem, User as UserIcon, Settings, Pickaxe } from 'lucide-react';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { GemIcon } from '@/components/GemIcon';
 import { HomeTab } from '@/components/tabs/HomeTab';
 import { TreasureChestTab } from '@/components/tabs/TreasureChestTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
+import { AddGemModal } from '@/components/treasure/AddGemModal';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 
 type Tab = 'home' | 'treasure' | 'profile';
 
@@ -20,9 +20,9 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 
 const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
-  const [showProfile, setShowProfile] = useState(false);
+  const [showAddGemModal, setShowAddGemModal] = useState(false);
   const navigate = useNavigate();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -30,10 +30,8 @@ const AppShell = () => {
     }
   }, [user, loading, navigate]);
 
-  const handleLogout = async () => {
-    await signOut();
-    toast.success('Logged out successfully');
-    navigate('/auth');
+  const handleSettingsClick = () => {
+    navigate('/settings');
   };
 
   if (loading || !user) {
@@ -46,7 +44,9 @@ const AppShell = () => {
     );
   }
 
-  const displayName = profile?.display_name || user.email?.split('@')[0] || 'Raver';
+  // Get avatar URL - prioritize profile avatar, then user metadata (Google/Apple)
+  const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const firstName = (profile?.display_name || user.email?.split('@')[0] || 'Raver').split(' ')[0];
 
   return (
     <div className="min-h-screen flex flex-col bg-cosmic">
@@ -62,35 +62,25 @@ const AppShell = () => {
             </h1>
           </div>
           
-          <div className="relative">
-            <button
-              onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center gap-2 glass-button px-3 py-1.5 rounded-full hover:border-primary/40 transition-colors"
-            >
-              <User className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground truncate max-w-[80px]">
-                {displayName}
-              </span>
-            </button>
-            
-            {showProfile && (
-              <div className="absolute right-0 top-full mt-2 glass-card p-3 rounded-xl min-w-[160px] animate-scale-in">
-                <p className="text-sm text-muted-foreground mb-1 truncate">{user.email}</p>
-                {profile && (
-                  <p className="text-xs text-primary mb-2">
-                    {profile.raver_rank} • {profile.total_gems} gems
-                  </p>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 text-sm text-destructive hover:text-destructive/80 transition-colors w-full"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Log out
-                </button>
+          <button
+            onClick={handleSettingsClick}
+            className="flex items-center gap-2 glass-button px-3 py-1.5 rounded-full hover:border-primary/40 transition-colors"
+          >
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt="Profile" 
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-primary">
+                  {firstName.charAt(0).toUpperCase()}
+                </span>
               </div>
             )}
-          </div>
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </button>
         </header>
 
         {/* Content */}
@@ -99,6 +89,17 @@ const AppShell = () => {
           {activeTab === 'treasure' && <TreasureChestTab />}
           {activeTab === 'profile' && <ProfileTab />}
         </main>
+
+        {/* Floating Pickaxe Button */}
+        <button
+          onClick={() => setShowAddGemModal(true)}
+          className="fixed bottom-24 right-4 z-30 w-14 h-14 rounded-full bg-primary shadow-2xl flex items-center justify-center hover:scale-110 transition-transform"
+          style={{
+            boxShadow: '0 0 30px hsl(var(--primary) / 0.5), 0 8px 32px rgba(0,0,0,0.4)'
+          }}
+        >
+          <Pickaxe className="w-6 h-6 text-primary-foreground" />
+        </button>
 
         {/* Bottom Tab bar */}
         <div className="fixed bottom-0 left-0 right-0 z-20">
@@ -128,6 +129,13 @@ const AppShell = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Gem Modal */}
+      <AddGemModal 
+        open={showAddGemModal} 
+        onOpenChange={setShowAddGemModal}
+        onGemAdded={() => {}}
+      />
     </div>
   );
 };
