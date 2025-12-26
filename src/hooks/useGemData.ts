@@ -177,18 +177,18 @@ export const useUserGems = (userId: string | undefined) => {
 
 export const addDJ = async (stageName: string, genreId: string): Promise<DJ | null> => {
   // First check if DJ already exists (case-insensitive)
-  const { data: existingDJ } = await supabase
+  const { data: existingDJs } = await supabase
     .from('djs')
     .select(`
       *,
       genre:genres(*)
     `)
     .ilike('stage_name', stageName.trim())
-    .single();
+    .limit(1);
 
-  if (existingDJ) {
+  if (existingDJs && existingDJs.length > 0) {
     // Return existing DJ instead of creating duplicate
-    return existingDJ as DJ;
+    return existingDJs[0] as DJ;
   }
 
   const { data, error } = await supabase

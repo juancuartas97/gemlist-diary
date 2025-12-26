@@ -74,7 +74,7 @@ export const GemMiningAnimation = ({
         <X className="w-5 h-5 text-white" />
       </button>
 
-      <div className="flex flex-col items-center justify-center px-6 max-w-md text-center">
+      <div className="flex flex-col items-center justify-center px-4 sm:px-6 w-full max-w-md text-center overflow-y-auto max-h-[90vh] py-8">
         {/* Mining Phase */}
         {phase === 'mining' && (
           <div className="animate-fade-in">
