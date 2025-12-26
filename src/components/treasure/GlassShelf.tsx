@@ -1,14 +1,21 @@
 import { type UserGem } from '@/hooks/useGemData';
 import { CrystalGem } from './CrystalGem';
+import { GemCluster } from './GemCluster';
+
+// A shelf item can be a single gem or a cluster of gems
+export type ShelfItem = 
+  | { type: 'single'; gem: UserGem }
+  | { type: 'cluster'; gems: UserGem[] };
 
 interface GlassShelfProps {
   depth: number;
-  userGems: UserGem[];
+  items: ShelfItem[];
   onGemClick?: (gem: UserGem) => void;
+  onClusterClick?: (gems: UserGem[]) => void;
 }
 
-export const GlassShelf = ({ depth, userGems, onGemClick }: GlassShelfProps) => {
-  if (userGems.length === 0) return null;
+export const GlassShelf = ({ depth, items, onGemClick, onClusterClick }: GlassShelfProps) => {
+  if (items.length === 0) return null;
   
   const scale = 1 - depth * 0.06;
   const opacity = 1 - depth * 0.1;
@@ -64,16 +71,33 @@ export const GlassShelf = ({ depth, userGems, onGemClick }: GlassShelfProps) => 
         {/* Inner top glow */}
         <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white/5 to-transparent rounded-t-xl" />
 
-        {/* Shelf Surface with Gems */}
+        {/* Shelf Surface with Items */}
         <div className="relative flex justify-center items-end gap-10 py-8 px-6 min-h-[140px]">
-          {userGems.map((gem, i) => (
-            <CrystalGem 
-              key={gem.id} 
-              gem={gem}
-              delay={i * 0.15 + depth * 0.2}
-              onClick={() => onGemClick?.(gem)}
-            />
-          ))}
+          {items.map((item, i) => {
+            if (item.type === 'single') {
+              return (
+                <CrystalGem 
+                  key={item.gem.id} 
+                  gem={item.gem}
+                  delay={i * 0.15 + depth * 0.2}
+                  onClick={() => onGemClick?.(item.gem)}
+                />
+              );
+            } else {
+              return (
+                <div key={`cluster-${item.gems[0].dj_id}`} className="flex flex-col items-center gap-2">
+                  <GemCluster 
+                    gems={item.gems}
+                    size="lg"
+                    onClusterClick={() => onClusterClick?.(item.gems)}
+                  />
+                  <span className="text-xs text-muted-foreground/70 text-center max-w-20 truncate">
+                    {item.gems[0].dj?.stage_name || 'Unknown'}
+                  </span>
+                </div>
+              );
+            }
+          })}
         </div>
 
         {/* Glass shelf bottom - simulating thickness */}
