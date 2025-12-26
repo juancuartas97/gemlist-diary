@@ -4,9 +4,10 @@ import { CrystalGem } from './CrystalGem';
 interface GlassShelfProps {
   depth: number;
   userGems: UserGem[];
+  onGemClick?: (gem: UserGem) => void;
 }
 
-export const GlassShelf = ({ depth, userGems }: GlassShelfProps) => {
+export const GlassShelf = ({ depth, userGems, onGemClick }: GlassShelfProps) => {
   if (userGems.length === 0) return null;
   
   const scale = 1 - depth * 0.06;
@@ -70,6 +71,7 @@ export const GlassShelf = ({ depth, userGems }: GlassShelfProps) => {
               key={gem.id} 
               gem={gem}
               delay={i * 0.15 + depth * 0.2}
+              onClick={() => onGemClick?.(gem)}
             />
           ))}
         </div>

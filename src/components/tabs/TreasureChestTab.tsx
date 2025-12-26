@@ -3,11 +3,11 @@ import { Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
 import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf } from '@/components/treasure/GlassShelf';
 import { GemCluster } from '@/components/treasure/GemCluster';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
+import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
 import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
 import ultraPin from '@/assets/pins/ultra.png';
@@ -35,6 +35,8 @@ export const TreasureChestTab = () => {
   const { user } = useAuth();
   const { gems, loading, refetch } = useUserGems(user?.id);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   
   // Group gems by DJ for clustering
   const groupedByDJ = groupGemsByDJ(gems);
@@ -45,6 +47,20 @@ export const TreasureChestTab = () => {
     .filter(([_, djGems]) => djGems.length > 1);
 
   const handleGemAdded = () => {
+    refetch();
+  };
+
+  const handleGemClick = (gem: UserGem) => {
+    setSelectedGem(gem);
+    setShowDetailModal(true);
+  };
+
+  const handleGemDeleted = () => {
+    setSelectedGem(null);
+    refetch();
+  };
+
+  const handleGemUpdated = () => {
     refetch();
   };
 
@@ -104,6 +120,7 @@ export const TreasureChestTab = () => {
                 <GlassShelf 
                   depth={0}
                   userGems={singleGems.slice(0, 3)}
+                  onGemClick={handleGemClick}
                 />
               )}
               
@@ -119,6 +136,7 @@ export const TreasureChestTab = () => {
                         <GemCluster 
                           gems={djGems}
                           size="lg"
+                          onGemClick={handleGemClick}
                         />
                         <span className="text-xs text-muted-foreground/70 text-center max-w-20 truncate">
                           {djGems[0].dj?.stage_name || 'Unknown'}
@@ -134,6 +152,7 @@ export const TreasureChestTab = () => {
                 <GlassShelf 
                   depth={1}
                   userGems={singleGems.slice(3, 6)}
+                  onGemClick={handleGemClick}
                 />
               )}
 
@@ -142,6 +161,7 @@ export const TreasureChestTab = () => {
                 <GlassShelf 
                   depth={2}
                   userGems={singleGems.slice(6, 9)}
+                  onGemClick={handleGemClick}
                 />
               )}
             </div>
@@ -168,6 +188,15 @@ export const TreasureChestTab = () => {
         open={showAddModal} 
         onOpenChange={setShowAddModal}
         onGemAdded={handleGemAdded}
+      />
+
+      {/* Gem Detail Modal */}
+      <GemDetailModal
+        gem={selectedGem}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        onGemDeleted={handleGemDeleted}
+        onGemUpdated={handleGemUpdated}
       />
     </div>
   );
