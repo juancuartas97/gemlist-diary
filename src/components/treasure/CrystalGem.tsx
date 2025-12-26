@@ -6,6 +6,7 @@ interface CrystalGemProps {
   delay?: number;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
+  onClick?: () => void;
 }
 
 // Helper to convert hex to HSL-like values for gradient
@@ -24,7 +25,7 @@ const adjustColor = (hex: string, amount: number) => {
   return `rgb(${adjust(rgb.r)}, ${adjust(rgb.g)}, ${adjust(rgb.b)})`;
 };
 
-export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: CrystalGemProps) => {
+export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true, onClick }: CrystalGemProps) => {
   const baseColor = gem.genre?.color_hex || '#1E8C6A';
   const colors = {
     main: baseColor,
@@ -42,10 +43,13 @@ export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true }: Cr
 
   return (
     <div 
-      className="crystal-gem-container group cursor-pointer flex flex-col items-center"
+      className={cn(
+        "crystal-gem-container group flex flex-col items-center",
+        onClick && "cursor-pointer"
+      )}
       style={{ animationDelay: `${delay}s` }}
+      onClick={onClick}
     >
-      {/* Outer Glow Aura */}
       <div 
         className="absolute blur-3xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 rounded-full"
         style={{ 
