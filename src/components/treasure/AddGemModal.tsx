@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
 import { FacetRatingsGroup } from '@/components/FacetRating';
+import { GemMiningAnimation } from './GemMiningAnimation';
 import { 
   useGenres, 
   useDJSearch, 
@@ -39,6 +40,14 @@ interface AddGemModalProps {
   onGemAdded: () => void;
 }
 
+interface CollectedGemInfo {
+  artistName: string;
+  venueName?: string;
+  eventDate: string;
+  genreName: string;
+  gemColor: string;
+}
+
 export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps) => {
   const { user } = useAuth();
   const { genres } = useGenres();
@@ -59,6 +68,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   });
   const [showNewDJGenreSelect, setShowNewDJGenreSelect] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Mining animation state
+  const [showMiningAnimation, setShowMiningAnimation] = useState(false);
+  const [collectedGemInfo, setCollectedGemInfo] = useState<CollectedGemInfo | null>(null);
   
   // Search results
   const { djs: djResults, loading: djLoading } = useDJSearch(djQuery);
@@ -85,8 +98,29 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         crowd: null,
       });
       setShowNewDJGenreSelect(false);
+      setShowMiningAnimation(false);
+      setCollectedGemInfo(null);
     }
   }, [open]);
+
+  const resetFormForNewGem = () => {
+    setDjQuery('');
+    setVenueQuery('');
+    setSelectedDJ(null);
+    setSelectedVenue(null);
+    setSelectedGenreId('');
+    setEventDate(new Date().toISOString().split('T')[0]);
+    setNotes('');
+    setFacetRatings({
+      sound_quality: null,
+      energy: null,
+      performance: null,
+      crowd: null,
+    });
+    setShowNewDJGenreSelect(false);
+    setShowMiningAnimation(false);
+    setCollectedGemInfo(null);
+  };
 
   const handleDJSelect = (option: { id: string; label: string }) => {
     const dj = djResults.find(d => d.id === option.id);
@@ -178,9 +212,16 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
       });
 
       if (gem) {
-        toast.success('Gem collected!');
+        const gemGenre = genres.find(g => g.id === genreId);
+        setCollectedGemInfo({
+          artistName: djToUse.stage_name,
+          venueName: selectedVenue?.name,
+          eventDate: eventDate,
+          genreName: gemGenre?.name || 'Unknown',
+          gemColor: gemGenre?.color_hex || '#1E8C6A',
+        });
+        setShowMiningAnimation(true);
         onGemAdded();
-        onOpenChange(false);
       } else {
         toast.error('Failed to collect gem');
       }
@@ -191,6 +232,32 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
 
     setSubmitting(false);
   };
+
+  const handleMiningClose = () => {
+    setShowMiningAnimation(false);
+    setCollectedGemInfo(null);
+    onOpenChange(false);
+  };
+
+  const handleMiningContinue = () => {
+    resetFormForNewGem();
+  };
+
+  // Show mining animation instead of dialog content
+  if (showMiningAnimation && collectedGemInfo) {
+    return (
+      <GemMiningAnimation
+        open={showMiningAnimation}
+        onClose={handleMiningClose}
+        onContinue={handleMiningContinue}
+        artistName={collectedGemInfo.artistName}
+        venueName={collectedGemInfo.venueName}
+        eventDate={collectedGemInfo.eventDate}
+        genreName={collectedGemInfo.genreName}
+        gemColor={collectedGemInfo.gemColor}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
