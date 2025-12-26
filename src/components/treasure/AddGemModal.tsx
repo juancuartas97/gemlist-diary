@@ -20,6 +20,7 @@ import {
   type Genre,
   type FacetRatings
 } from '@/hooks/useGemData';
+import { type EventEdition } from '@/hooks/useEventSeries';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import {
@@ -169,24 +170,30 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
     setShowAddEventModal(true);
   };
 
-  const handleEventCreated = (event: Event) => {
-    setSelectedEvent(event);
-    setEventQuery(event.title);
+  const handleEventCreated = (edition: EventEdition) => {
+    // Map edition to Event-like structure for compatibility
+    const eventLike: Event = {
+      id: edition.id,
+      title: edition.series?.name ? `${edition.series.name} ${edition.year}` : `Event ${edition.year}`,
+      start_at: edition.start_date,
+      end_at: edition.end_date,
+      venue_id: edition.venue_id,
+      venue: edition.venue,
+      primary_genre_id: edition.series?.primary_genre_id || null,
+    };
     
-    // Auto-fill venue from created event
-    if (event.venue) {
-      setSelectedVenue(event.venue);
-      setVenueQuery(event.venue.name);
+    setSelectedEvent(eventLike);
+    setEventQuery(eventLike.title);
+    
+    // Auto-fill venue from edition
+    if (edition.venue) {
+      setSelectedVenue(edition.venue);
+      setVenueQuery(edition.venue.name);
     }
     
-    // Auto-fill date from created event
-    if (event.start_at) {
-      setEventDate(event.start_at.split('T')[0]);
-    }
-    
-    // Auto-fill genre from created event if available
-    if (event.primary_genre_id && !selectedGenreId && !selectedDJ?.primary_genre_id) {
-      setSelectedGenreId(event.primary_genre_id);
+    // Auto-fill date from edition
+    if (edition.start_date) {
+      setEventDate(edition.start_date);
     }
   };
 

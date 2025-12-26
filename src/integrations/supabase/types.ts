@@ -52,6 +52,60 @@ export type Database = {
           },
         ]
       }
+      event_editions: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          series_id: string
+          start_date: string
+          status: string | null
+          updated_at: string | null
+          venue_id: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          series_id: string
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+          venue_id?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          series_id?: string
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+          venue_id?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_editions_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "event_series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_editions_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineups: {
         Row: {
           created_at: string | null
@@ -93,6 +147,60 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_series: {
+        Row: {
+          created_at: string | null
+          default_venue_id: string | null
+          description: string | null
+          first_year: number | null
+          id: string
+          name: string
+          primary_genre_id: string | null
+          typical_duration_days: number | null
+          typical_month: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_venue_id?: string | null
+          description?: string | null
+          first_year?: number | null
+          id?: string
+          name: string
+          primary_genre_id?: string | null
+          typical_duration_days?: number | null
+          typical_month?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_venue_id?: string | null
+          description?: string | null
+          first_year?: number | null
+          id?: string
+          name?: string
+          primary_genre_id?: string | null
+          typical_duration_days?: number | null
+          typical_month?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_series_default_venue_id_fkey"
+            columns: ["default_venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_series_primary_genre_id_fkey"
+            columns: ["primary_genre_id"]
+            isOneToOne: false
+            referencedRelation: "genres"
             referencedColumns: ["id"]
           },
         ]
@@ -376,6 +484,7 @@ export type Database = {
           collected_at: string
           created_at: string | null
           dj_id: string
+          edition_id: string | null
           event_date: string
           event_id: string | null
           facet_ratings: Json | null
@@ -391,6 +500,7 @@ export type Database = {
           collected_at?: string
           created_at?: string | null
           dj_id: string
+          edition_id?: string | null
           event_date: string
           event_id?: string | null
           facet_ratings?: Json | null
@@ -406,6 +516,7 @@ export type Database = {
           collected_at?: string
           created_at?: string | null
           dj_id?: string
+          edition_id?: string | null
           event_date?: string
           event_id?: string | null
           facet_ratings?: Json | null
@@ -423,6 +534,13 @@ export type Database = {
             columns: ["dj_id"]
             isOneToOne: false
             referencedRelation: "djs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_gems_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "event_editions"
             referencedColumns: ["id"]
           },
           {
