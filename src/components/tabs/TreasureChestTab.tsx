@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
 import { useAuth } from '@/hooks/useAuth';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
-import { GlassShelf } from '@/components/treasure/GlassShelf';
-import { GemCluster } from '@/components/treasure/GemCluster';
+import { GlassShelf, type ShelfItem } from '@/components/treasure/GlassShelf';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import { GemDetailModal } from '@/components/treasure/GemDetailModal';
+import { ClusterViewModal } from '@/components/treasure/ClusterViewModal';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
 import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
 import ultraPin from '@/assets/pins/ultra.png';
@@ -37,20 +37,61 @@ export const TreasureChestTab = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedCluster, setSelectedCluster] = useState<UserGem[]>([]);
+  const [showClusterModal, setShowClusterModal] = useState(false);
   
-  // Group gems by DJ for clustering
-  const groupedByDJ = groupGemsByDJ(gems);
-  const singleGems = Array.from(groupedByDJ.entries())
-    .filter(([_, djGems]) => djGems.length === 1)
-    .map(([_, djGems]) => djGems[0]);
-  const clusteredGems = Array.from(groupedByDJ.entries())
-    .filter(([_, djGems]) => djGems.length > 1);
+  // Build unified shelf items (singles + clusters mixed together)
+  const shelfItems = useMemo((): ShelfItem[] => {
+    const groupedByDJ = groupGemsByDJ(gems);
+    const items: ShelfItem[] = [];
+    
+    groupedByDJ.forEach((djGems) => {
+      if (djGems.length === 1) {
+        items.push({ type: 'single', gem: djGems[0] });
+      } else {
+        items.push({ type: 'cluster', gems: djGems });
+      }
+    });
+    
+    // Sort by most recent event date
+    items.sort((a, b) => {
+      const dateA = a.type === 'single' 
+        ? new Date(a.gem.event_date) 
+        : new Date(Math.max(...a.gems.map(g => new Date(g.event_date).getTime())));
+      const dateB = b.type === 'single' 
+        ? new Date(b.gem.event_date) 
+        : new Date(Math.max(...b.gems.map(g => new Date(g.event_date).getTime())));
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    return items;
+  }, [gems]);
+
+  // Split items into shelves (3 items per shelf)
+  const shelves = useMemo(() => {
+    const result: ShelfItem[][] = [];
+    for (let i = 0; i < shelfItems.length; i += 3) {
+      result.push(shelfItems.slice(i, i + 3));
+    }
+    return result;
+  }, [shelfItems]);
 
   const handleGemAdded = () => {
     refetch();
   };
 
   const handleGemClick = (gem: UserGem) => {
+    setSelectedGem(gem);
+    setShowDetailModal(true);
+  };
+
+  const handleClusterClick = (clusterGems: UserGem[]) => {
+    setSelectedCluster(clusterGems);
+    setShowClusterModal(true);
+  };
+
+  const handleClusterGemClick = (gem: UserGem) => {
+    setShowClusterModal(false);
     setSelectedGem(gem);
     setShowDetailModal(true);
   };
@@ -115,55 +156,15 @@ export const TreasureChestTab = () => {
             </div>
           ) : (
             <div className="shelves-container space-y-8">
-              {/* First Shelf - Single gems */}
-              {singleGems.length > 0 && (
+              {shelves.map((shelfItems, index) => (
                 <GlassShelf 
-                  depth={0}
-                  userGems={singleGems.slice(0, 3)}
+                  key={index}
+                  depth={index}
+                  items={shelfItems}
                   onGemClick={handleGemClick}
+                  onClusterClick={handleClusterClick}
                 />
-              )}
-              
-              {/* Gem Clusters Section */}
-              {clusteredGems.length > 0 && (
-                <div className="stacks-section mt-8">
-                  <h3 className="text-xs text-muted-foreground/50 uppercase tracking-widest mb-6 text-center">
-                    Repeated Encounters
-                  </h3>
-                  <div className="flex flex-wrap justify-center gap-8">
-                    {clusteredGems.map(([djId, djGems]) => (
-                      <div key={djId} className="flex flex-col items-center gap-2">
-                        <GemCluster 
-                          gems={djGems}
-                          size="lg"
-                          onGemClick={handleGemClick}
-                        />
-                        <span className="text-xs text-muted-foreground/70 text-center max-w-20 truncate">
-                          {djGems[0].dj?.stage_name || 'Unknown'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Second Shelf - More single gems */}
-              {singleGems.length > 3 && (
-                <GlassShelf 
-                  depth={1}
-                  userGems={singleGems.slice(3, 6)}
-                  onGemClick={handleGemClick}
-                />
-              )}
-
-              {/* Third Shelf - Even more */}
-              {singleGems.length > 6 && (
-                <GlassShelf 
-                  depth={2}
-                  userGems={singleGems.slice(6, 9)}
-                  onGemClick={handleGemClick}
-                />
-              )}
+              ))}
             </div>
           )}
         </div>
@@ -188,6 +189,14 @@ export const TreasureChestTab = () => {
         open={showAddModal} 
         onOpenChange={setShowAddModal}
         onGemAdded={handleGemAdded}
+      />
+
+      {/* Cluster View Modal */}
+      <ClusterViewModal
+        gems={selectedCluster}
+        open={showClusterModal}
+        onOpenChange={setShowClusterModal}
+        onGemClick={handleClusterGemClick}
       />
 
       {/* Gem Detail Modal */}

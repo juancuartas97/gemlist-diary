@@ -4,8 +4,7 @@ import { cn } from '@/lib/utils';
 
 interface GemClusterProps {
   gems: UserGem[];
-  onTap?: () => void;
-  onGemClick?: (gem: UserGem) => void;
+  onClusterClick?: (gems: UserGem[]) => void;
   size?: 'sm' | 'md' | 'lg';
 }
 
@@ -131,7 +130,7 @@ const getClusterOffsets = (count: number): { x: number; y: number; rotate: numbe
   ].slice(0, Math.min(count, 5));
 };
 
-export const GemCluster = ({ gems, onTap, onGemClick, size = 'md' }: GemClusterProps) => {
+export const GemCluster = ({ gems, onClusterClick, size = 'md' }: GemClusterProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const offsets = getClusterOffsets(gems.length);
   const primaryGem = gems[0];
@@ -139,11 +138,7 @@ export const GemCluster = ({ gems, onTap, onGemClick, size = 'md' }: GemClusterP
   const djName = primaryGem.dj?.stage_name || 'Unknown';
 
   const handleClick = () => {
-    if (onGemClick) {
-      // When clicking a cluster, open the first gem
-      onGemClick(primaryGem);
-    }
-    onTap?.();
+    onClusterClick?.(gems);
   };
 
   return (
@@ -155,7 +150,7 @@ export const GemCluster = ({ gems, onTap, onGemClick, size = 'md' }: GemClusterP
         'relative flex items-center justify-center transition-transform duration-300',
         sizes[size].container,
         isHovered && 'scale-110',
-        (onTap || onGemClick) && 'cursor-pointer'
+        onClusterClick && 'cursor-pointer'
       )}
     >
       {/* Glow effect */}
