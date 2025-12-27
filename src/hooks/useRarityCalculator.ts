@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface RarityResult {
   total_score: number;
-  rarity_tier: 'COMMON' | 'UNCOMMON' | 'RARE' | 'LEGENDARY' | 'MYTHIC';
+  rarity_tier: 'common' | 'uncommon' | 'rare' | 'legendary' | 'mythic';
   venue_score: number;
   city_score: number;
   event_score: number;
@@ -21,11 +21,11 @@ export interface RarityBreakdown {
 }
 
 export const RARITY_TIERS = {
-  COMMON: { emoji: '💎', color: '#6B7280', label: 'Common', description: 'The "Resident" Gem' },
-  UNCOMMON: { emoji: '🔷', color: '#3B82F6', label: 'Uncommon', description: 'The "Tour" Gem' },
-  RARE: { emoji: '🟣', color: '#8B5CF6', label: 'Rare', description: 'The "Special Guest" Gem' },
-  LEGENDARY: { emoji: '🟠', color: '#F59E0B', label: 'Legendary', description: 'The "Underplay" Gem' },
-  MYTHIC: { emoji: '🔴', color: '#EF4444', label: 'Mythic', description: 'The "White Whale" Gem' },
+  common: { emoji: '💎', color: '#6B7280', label: 'Common', description: 'The "Resident" Gem' },
+  uncommon: { emoji: '🔷', color: '#3B82F6', label: 'Uncommon', description: 'The "Tour" Gem' },
+  rare: { emoji: '🟣', color: '#8B5CF6', label: 'Rare', description: 'The "Special Guest" Gem' },
+  legendary: { emoji: '🟠', color: '#F59E0B', label: 'Legendary', description: 'The "Underplay" Gem' },
+  mythic: { emoji: '🔴', color: '#EF4444', label: 'Mythic', description: 'The "White Whale" Gem' },
 } as const;
 
 export type RarityTier = keyof typeof RARITY_TIERS;
@@ -110,9 +110,9 @@ export const getRarityBreakdown = (result: RarityResult): RarityBreakdown => {
 };
 
 export const getTierFromScore = (score: number): RarityTier => {
-  if (score >= 99) return 'MYTHIC';
-  if (score >= 86) return 'LEGENDARY';
-  if (score >= 71) return 'RARE';
-  if (score >= 41) return 'UNCOMMON';
-  return 'COMMON';
+  if (score >= 99) return 'mythic';
+  if (score >= 86) return 'legendary';
+  if (score >= 71) return 'rare';
+  if (score >= 41) return 'uncommon';
+  return 'common';
 };
