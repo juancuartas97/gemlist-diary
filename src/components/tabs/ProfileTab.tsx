@@ -1,11 +1,16 @@
+import { useState } from 'react';
 import { GemBadge } from '@/components/GemBadge';
 import { StarRating } from '@/components/StarRating';
 import { TasteMapVisual } from '@/components/TasteMapVisual';
+import { TrophyCase } from '@/components/achievements/TrophyCase';
+import { GoalsList } from '@/components/goals/GoalsList';
+import { AddGoalModal } from '@/components/goals/AddGoalModal';
 import { getSets, getTasteProfile } from '@/lib/storage';
 import { useAuth } from '@/hooks/useAuth';
 
 export const ProfileTab = () => {
   const { user, profile } = useAuth();
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const sets = getSets();
   const tasteProfile = getTasteProfile();
   const recentSets = sets.slice(0, 5);
@@ -29,6 +34,12 @@ export const ProfileTab = () => {
           </p>
         )}
       </div>
+
+      {/* Trophy Case */}
+      <TrophyCase />
+
+      {/* Active Quests */}
+      <GoalsList onAddGoal={() => setShowAddGoalModal(true)} />
 
       {/* Taste Map */}
       <div className="glass-card p-5 rounded-2xl">
@@ -87,6 +98,12 @@ export const ProfileTab = () => {
           <p className="text-xs text-muted-foreground">Top Genre</p>
         </div>
       </div>
+
+      {/* Add Goal Modal */}
+      <AddGoalModal 
+        open={showAddGoalModal} 
+        onOpenChange={setShowAddGoalModal} 
+      />
     </div>
   );
 };

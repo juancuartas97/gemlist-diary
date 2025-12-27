@@ -46,6 +46,7 @@ export interface UserGem {
   edition_id?: string | null;
   rarity_score?: number | null;
   rarity_tier?: string | null;
+  is_genesis_mint?: boolean;
   dj?: DJ;
   genre?: Genre;
   venue?: Venue;

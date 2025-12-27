@@ -1,5 +1,6 @@
 import { type UserGem } from '@/hooks/useGemData';
 import { cn } from '@/lib/utils';
+import { GenesisTag } from '@/components/achievements/GenesisTag';
 
 interface CrystalGemProps {
   gem: UserGem;
@@ -8,7 +9,6 @@ interface CrystalGemProps {
   showLabel?: boolean;
   onClick?: () => void;
 }
-
 // Helper to convert hex to HSL-like values for gradient
 const hexToRgb = (hex: string) => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -204,6 +204,11 @@ export const CrystalGem = ({ gem, delay = 0, size = 'md', showLabel = true, onCl
       {/* DJ Label */}
       {showLabel && (
         <div className="mt-3 text-center">
+          {gem.is_genesis_mint && (
+            <div className="mb-1">
+              <GenesisTag size="sm" />
+            </div>
+          )}
           <span className="text-[11px] text-foreground/80 font-medium tracking-wide">{djName}</span>
         </div>
       )}
