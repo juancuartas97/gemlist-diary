@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          category: string
+          color_tier: string | null
+          created_at: string | null
+          description: string | null
+          icon_emoji: string | null
+          id: string
+          name: string
+          slug: string
+          threshold: number | null
+          threshold_percent: number | null
+          tier: number | null
+        }
+        Insert: {
+          category: string
+          color_tier?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_emoji?: string | null
+          id?: string
+          name: string
+          slug: string
+          threshold?: number | null
+          threshold_percent?: number | null
+          tier?: number | null
+        }
+        Update: {
+          category?: string
+          color_tier?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon_emoji?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          threshold?: number | null
+          threshold_percent?: number | null
+          tier?: number | null
+        }
+        Relationships: []
+      }
       dj_performances: {
         Row: {
           city: string
@@ -534,6 +576,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string | null
+          current_count: number | null
+          id: string
+          reference_id: string | null
+          reference_name: string | null
+          unlocked_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string | null
+          current_count?: number | null
+          id?: string
+          reference_id?: string | null
+          reference_name?: string | null
+          unlocked_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string | null
+          current_count?: number | null
+          id?: string
+          reference_id?: string | null
+          reference_name?: string | null
+          unlocked_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_gems: {
         Row: {
           collected_at: string
@@ -544,6 +637,7 @@ export type Database = {
           event_id: string | null
           facet_ratings: Json | null
           id: string
+          is_genesis_mint: boolean | null
           is_rated: boolean | null
           primary_genre_id: string
           private_note: string | null
@@ -562,6 +656,7 @@ export type Database = {
           event_id?: string | null
           facet_ratings?: Json | null
           id?: string
+          is_genesis_mint?: boolean | null
           is_rated?: boolean | null
           primary_genre_id: string
           private_note?: string | null
@@ -580,6 +675,7 @@ export type Database = {
           event_id?: string | null
           facet_ratings?: Json | null
           id?: string
+          is_genesis_mint?: boolean | null
           is_rated?: boolean | null
           primary_genre_id?: string
           private_note?: string | null
@@ -623,6 +719,57 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_goals: {
+        Row: {
+          completed_at: string | null
+          completed_gem_id: string | null
+          created_at: string | null
+          goal_type: string
+          id: string
+          reference_id: string | null
+          reference_name: string
+          target_date: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_gem_id?: string | null
+          created_at?: string | null
+          goal_type: string
+          id?: string
+          reference_id?: string | null
+          reference_name: string
+          target_date?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_gem_id?: string | null
+          created_at?: string | null
+          goal_type?: string
+          id?: string
+          reference_id?: string | null
+          reference_name?: string
+          target_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_goals_completed_gem_id_fkey"
+            columns: ["completed_gem_id"]
+            isOneToOne: false
+            referencedRelation: "user_gems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -711,6 +858,17 @@ export type Database = {
           venue_score: number
           volume_score: number
           year_count: number
+        }[]
+      }
+      get_artist_leaderboard: {
+        Args: { p_dj_id: string; p_limit?: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          first_collected: string
+          gem_count: number
+          rank: number
+          user_id: string
         }[]
       }
       get_dj_city_count: {
