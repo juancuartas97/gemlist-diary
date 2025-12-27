@@ -43,10 +43,14 @@ export interface UserGem {
   facet_ratings: FacetRatings;
   private_note: string | null;
   venue_id: string | null;
+  event_id?: string | null;
   edition_id?: string | null;
   rarity_score?: number | null;
   rarity_tier?: string | null;
   is_genesis_mint?: boolean;
+  gem_dna?: string | null;
+  mint_number?: number | null;
+  modifiers?: string[] | null;
   dj?: DJ;
   genre?: Genre;
   venue?: Venue;

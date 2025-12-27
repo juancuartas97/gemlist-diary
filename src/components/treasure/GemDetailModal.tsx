@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { X, MapPin, Calendar, Music, Trash2, Pencil } from 'lucide-react';
+import { X, MapPin, Calendar, Music, Trash2, Pencil, Dna, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -19,6 +19,9 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Json } from '@/integrations/supabase/types';
+import { GemDNADisplay } from './GemDNADisplay';
+import { RarityBreakdown } from './RarityBreakdown';
+import { type RarityResult, RARITY_TIERS } from '@/hooks/useRarityCalculator';
 
 interface GemDetailModalProps {
   gem: UserGem | null;
@@ -62,6 +65,7 @@ export const GemDetailModal = ({
     performance: null,
     crowd: null,
   });
+  const [showRarityBreakdown, setShowRarityBreakdown] = useState(false);
 
   if (!gem) return null;
 
@@ -71,6 +75,22 @@ export const GemDetailModal = ({
   const venueName = gem.venue?.name || 'Unknown Venue';
   const venueLocation = gem.venue ? `${gem.venue.city}${gem.venue.state ? `, ${gem.venue.state}` : ''}, ${gem.venue.country}` : '';
   const eventDate = format(new Date(gem.event_date), 'MMMM d, yyyy');
+  
+  // Build rarity result object from gem data for breakdown display
+  const rarityResult: RarityResult | null = gem.rarity_score != null ? {
+    total_score: gem.rarity_score,
+    rarity_tier: (gem.rarity_tier || 'common') as RarityResult['rarity_tier'],
+    venue_score: 0, // We don't store individual scores, but still show total
+    city_score: 0,
+    event_score: 0,
+    volume_score: 0,
+    venue_count: 0,
+    city_count: 0,
+    event_count: 0,
+    year_count: 0,
+  } : null;
+  
+  const tier = gem.rarity_tier ? RARITY_TIERS[gem.rarity_tier as keyof typeof RARITY_TIERS] : null;
 
   const handleStartEdit = () => {
     setEditedNote(gem.private_note || '');
@@ -301,6 +321,43 @@ export const GemDetailModal = ({
                   </div>
                 )}
               </div>
+
+              {/* Gem DNA Section */}
+              {gem.gem_dna && (
+                <>
+                  <div className="h-px bg-border/30" />
+                  <GemDNADisplay dna={gem.gem_dna} />
+                </>
+              )}
+
+              {/* Rarity Display */}
+              {tier && (
+                <>
+                  <div className="h-px bg-border/30" />
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-background/30 border border-border/20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{tier.emoji}</span>
+                      <div>
+                        <div className="font-semibold" style={{ color: tier.color }}>{tier.label}</div>
+                        <div className="text-xs text-muted-foreground">{tier.description}</div>
+                      </div>
+                    </div>
+                    {gem.rarity_score && (
+                      <div className="text-right">
+                        <div className="font-mono text-lg font-bold" style={{ color: tier.color }}>
+                          {gem.rarity_score}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Score</div>
+                      </div>
+                    )}
+                  </div>
+                  {gem.mint_number && (
+                    <div className="text-center text-xs text-muted-foreground">
+                      You were <span className="font-semibold text-foreground">#{gem.mint_number}</span> to mine this gem
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Divider */}
               <div className="h-px bg-border/30" />

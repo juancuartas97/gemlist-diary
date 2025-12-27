@@ -636,9 +636,12 @@ export type Database = {
           event_date: string
           event_id: string | null
           facet_ratings: Json | null
+          gem_dna: string | null
           id: string
           is_genesis_mint: boolean | null
           is_rated: boolean | null
+          mint_number: number | null
+          modifiers: string[] | null
           primary_genre_id: string
           private_note: string | null
           rarity_score: number | null
@@ -655,9 +658,12 @@ export type Database = {
           event_date: string
           event_id?: string | null
           facet_ratings?: Json | null
+          gem_dna?: string | null
           id?: string
           is_genesis_mint?: boolean | null
           is_rated?: boolean | null
+          mint_number?: number | null
+          modifiers?: string[] | null
           primary_genre_id: string
           private_note?: string | null
           rarity_score?: number | null
@@ -674,9 +680,12 @@ export type Database = {
           event_date?: string
           event_id?: string | null
           facet_ratings?: Json | null
+          gem_dna?: string | null
           id?: string
           is_genesis_mint?: boolean | null
           is_rated?: boolean | null
+          mint_number?: number | null
+          modifiers?: string[] | null
           primary_genre_id?: string
           private_note?: string | null
           rarity_score?: number | null
@@ -860,6 +869,18 @@ export type Database = {
           year_count: number
         }[]
       }
+      generate_code: { Args: { name: string }; Returns: string }
+      generate_gem_dna: {
+        Args: {
+          p_date: string
+          p_dj_name: string
+          p_mint_number: number
+          p_modifiers: string[]
+          p_rarity_tier: string
+          p_venue_name: string
+        }
+        Returns: string
+      }
       get_artist_leaderboard: {
         Args: { p_dj_id: string; p_limit?: number }
         Returns: {
@@ -884,6 +905,10 @@ export type Database = {
         Returns: number
       }
       get_dj_yearly_volume: { Args: { p_dj_id: string }; Returns: number }
+      get_next_mint_number: {
+        Args: { p_dj_id: string; p_event_date: string; p_venue_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
