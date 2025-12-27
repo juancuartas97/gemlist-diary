@@ -6,6 +6,7 @@ import { AutocompleteInput } from '@/components/AutocompleteInput';
 import { FacetRatingsGroup } from '@/components/FacetRating';
 import { GemMiningAnimation } from './GemMiningAnimation';
 import { AddEventModal } from './AddEventModal';
+import { RecentEventCard, RecentEventsSkeleton } from './RecentEventCard';
 import { 
   useGenres, 
   useDJSearch, 
@@ -20,6 +21,7 @@ import {
   type Genre,
   type FacetRatings
 } from '@/hooks/useGemData';
+import { useDJRecentPerformances } from '@/hooks/useDJRecentPerformances';
 import { type EventEdition } from '@/hooks/useEventSeries';
 import { calculateRarity, type RarityResult } from '@/hooks/useRarityCalculator';
 import { useAuth } from '@/hooks/useAuth';
@@ -90,6 +92,9 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   const { djs: djResults, loading: djLoading } = useDJSearch(djQuery);
   const { venues: venueResults, loading: venueLoading } = useVenueSearch(venueQuery);
   const { events: eventResults, loading: eventLoading } = useEventSearch(eventQuery);
+  
+  // Recent performances for selected DJ
+  const { performances: recentPerformances, loading: recentLoading } = useDJRecentPerformances(selectedDJ?.id || null);
 
   // Get color for current genre
   const currentGenre = genres.find(g => g.id === (selectedDJ?.primary_genre_id || selectedGenreId));
@@ -221,6 +226,26 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
       ...prev,
       [category]: value,
     }));
+  };
+
+  // Handle selecting a recent performance - auto-fills all fields
+  const handleRecentPerformanceSelect = (performance: typeof recentPerformances[0]) => {
+    // Auto-fill venue
+    if (performance.venue) {
+      setSelectedVenue(performance.venue);
+      setVenueQuery(performance.venue.name);
+    } else if (performance.city) {
+      setVenueQuery(performance.city);
+    }
+    
+    // Auto-fill event if from a series
+    if (performance.event_series) {
+      const year = new Date(performance.performance_date).getFullYear();
+      setEventQuery(`${performance.event_series.name} ${year}`);
+    }
+    
+    // Auto-fill date
+    setEventDate(performance.performance_date);
   };
 
   // Determine if form is valid for submission
@@ -422,6 +447,33 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                   ))}
                 </SelectContent>
               </Select>
+            )}
+
+            {/* Recent Events Quick-Select - shown when DJ is selected */}
+            {selectedDJ && !showNewDJGenreSelect && (
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Recent Events
+                </label>
+                {recentLoading ? (
+                  <RecentEventsSkeleton />
+                ) : recentPerformances.length > 0 ? (
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                    {recentPerformances.map((perf) => (
+                      <RecentEventCard
+                        key={perf.id}
+                        performance={perf}
+                        onClick={() => handleRecentPerformanceSelect(perf)}
+                        genreColor={gemColor}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground/60 italic py-2">
+                    No recent events found for {selectedDJ.stage_name}
+                  </p>
+                )}
+              </div>
             )}
 
             {/* Event Autocomplete (optional) */}

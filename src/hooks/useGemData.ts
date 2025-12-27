@@ -79,7 +79,8 @@ export const useDJSearch = (query: string) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (query.length < 2) {
+    // Start searching after just 1 character for faster feel
+    if (query.length < 1) {
       setDJs([]);
       return;
     }
@@ -93,6 +94,7 @@ export const useDJSearch = (query: string) => {
           genre:genres(*)
         `)
         .ilike('stage_name', `%${query}%`)
+        .order('stage_name')
         .limit(10);
       
       if (!error && data) {
@@ -101,7 +103,8 @@ export const useDJSearch = (query: string) => {
       setLoading(false);
     };
 
-    const debounce = setTimeout(searchDJs, 300);
+    // Reduced debounce for snappier autocomplete (150ms)
+    const debounce = setTimeout(searchDJs, 150);
     return () => clearTimeout(debounce);
   }, [query]);
 
@@ -123,7 +126,7 @@ export const useEventSearch = (query: string) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (query.length < 2) {
+    if (query.length < 1) {
       setEvents([]);
       return;
     }
@@ -146,7 +149,8 @@ export const useEventSearch = (query: string) => {
       setLoading(false);
     };
 
-    const debounce = setTimeout(searchEvents, 300);
+    // Faster debounce (150ms)
+    const debounce = setTimeout(searchEvents, 150);
     return () => clearTimeout(debounce);
   }, [query]);
 
@@ -158,7 +162,7 @@ export const useVenueSearch = (query: string) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (query.length < 2) {
+    if (query.length < 1) {
       setVenues([]);
       return;
     }
@@ -169,6 +173,7 @@ export const useVenueSearch = (query: string) => {
         .from('venues')
         .select('*')
         .ilike('name', `%${query}%`)
+        .order('name')
         .limit(10);
       
       if (!error && data) {
@@ -177,7 +182,8 @@ export const useVenueSearch = (query: string) => {
       setLoading(false);
     };
 
-    const debounce = setTimeout(searchVenues, 300);
+    // Faster debounce (150ms)
+    const debounce = setTimeout(searchVenues, 150);
     return () => clearTimeout(debounce);
   }, [query]);
 
