@@ -3,11 +3,13 @@ import { Pickaxe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
 import { useAuth } from '@/hooks/useAuth';
+import { useTargetEvents, useDeleteGoal } from '@/hooks/useUserGoals';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf, type ShelfItem } from '@/components/treasure/GlassShelf';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import { ClusterViewModal } from '@/components/treasure/ClusterViewModal';
+import { GhostGem } from '@/components/goals/GhostGem';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
 import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
 import ultraPin from '@/assets/pins/ultra.png';
@@ -34,12 +36,13 @@ const festivalBadges: FestivalBadge[] = [
 export const TreasureChestTab = () => {
   const { user } = useAuth();
   const { gems, loading, refetch } = useUserGems(user?.id);
+  const { data: targetEvents } = useTargetEvents(user?.id);
+  const deleteGoal = useDeleteGoal();
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCluster, setSelectedCluster] = useState<UserGem[]>([]);
   const [showClusterModal, setShowClusterModal] = useState(false);
-  
   // Build unified shelf items (singles + clusters mixed together)
   const shelfItems = useMemo((): ShelfItem[] => {
     const groupedByDJ = groupGemsByDJ(gems);
@@ -105,6 +108,11 @@ export const TreasureChestTab = () => {
     refetch();
   };
 
+  const handleRemoveTargetEvent = (goalId: string) => {
+    if (!user?.id) return;
+    deleteGoal.mutate({ goalId, userId: user.id });
+  };
+
   return (
     <div className="treasure-chest min-h-screen relative overflow-hidden">
       {/* Atmospheric Background */}
@@ -141,6 +149,25 @@ export const TreasureChestTab = () => {
           <div className="trophy-lid-edge" />
         </div>
 
+        {/* Ghost Gems - Target Events */}
+        {targetEvents && targetEvents.length > 0 && (
+          <div className="mx-4 mb-6">
+            <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              Target Quests
+            </h3>
+            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+              {targetEvents.map((goal) => (
+                <GhostGem 
+                  key={goal.id} 
+                  goal={goal} 
+                  size="sm"
+                  onRemove={handleRemoveTargetEvent}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         {/* The Shelves - Glass Archive */}
         <div className="glass-archive perspective-container px-4">
           {loading ? (
