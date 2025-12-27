@@ -43,6 +43,9 @@ export interface UserGem {
   facet_ratings: FacetRatings;
   private_note: string | null;
   venue_id: string | null;
+  edition_id?: string | null;
+  rarity_score?: number | null;
+  rarity_tier?: string | null;
   dj?: DJ;
   genre?: Genre;
   venue?: Venue;
@@ -285,6 +288,9 @@ export const addUserGem = async (gem: {
   event_date: string;
   venue_id?: string;
   event_id?: string;
+  edition_id?: string;
+  rarity_score?: number;
+  rarity_tier?: string;
   facet_ratings?: {
     sound_quality: number | null;
     energy: number | null;

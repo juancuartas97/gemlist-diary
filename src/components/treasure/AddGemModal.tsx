@@ -21,6 +21,7 @@ import {
   type FacetRatings
 } from '@/hooks/useGemData';
 import { type EventEdition } from '@/hooks/useEventSeries';
+import { calculateRarity, type RarityResult } from '@/hooks/useRarityCalculator';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import {
@@ -51,6 +52,7 @@ interface CollectedGemInfo {
   eventDate: string;
   genreName: string;
   gemColor: string;
+  rarityResult?: RarityResult | null;
 }
 
 export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps) => {
@@ -278,6 +280,22 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         return;
       }
 
+      // Get city from venue for rarity calculation
+      const city = selectedVenue?.city || null;
+      
+      // Get event series ID from selected event if it's an edition
+      // For now, we'll pass null since we need to track series separately
+      const eventSeriesId = null; // TODO: Extract from edition if available
+      
+      // Calculate rarity BEFORE inserting gem
+      const rarityResult = await calculateRarity(
+        djToUse.id,
+        selectedVenue?.id || null,
+        city,
+        eventSeriesId,
+        eventDate
+      );
+
       const gem = await addUserGem({
         user_id: user.id,
         dj_id: djToUse.id,
@@ -285,6 +303,8 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         event_date: eventDate,
         venue_id: selectedVenue?.id,
         event_id: selectedEvent?.id,
+        rarity_score: rarityResult?.total_score,
+        rarity_tier: rarityResult?.rarity_tier,
         facet_ratings: facetRatings,
         private_note: notes || undefined,
       });
@@ -298,6 +318,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
           eventDate: eventDate,
           genreName: gemGenre?.name || 'Unknown',
           gemColor: gemGenre?.color_hex || '#1E8C6A',
+          rarityResult: rarityResult,
         });
         setShowMiningAnimation(true);
         onGemAdded();
@@ -335,6 +356,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         eventDate={collectedGemInfo.eventDate}
         genreName={collectedGemInfo.genreName}
         gemColor={collectedGemInfo.gemColor}
+        rarityResult={collectedGemInfo.rarityResult}
       />
     );
   }

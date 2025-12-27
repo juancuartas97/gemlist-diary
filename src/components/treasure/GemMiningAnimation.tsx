@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronRight } from 'lucide-react';
+import { X, ChevronRight, MapPin, Building2, Ticket, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { type RarityResult, RARITY_TIERS, getRarityBreakdown } from '@/hooks/useRarityCalculator';
 
 interface GemMiningAnimationProps {
   open: boolean;
@@ -13,6 +14,13 @@ interface GemMiningAnimationProps {
   eventDate: string;
   genreName: string;
   gemColor: string;
+  rarityResult?: RarityResult | null;
+}
+
+interface SlotValue {
+  current: number;
+  target: number;
+  revealed: boolean;
 }
 
 export const GemMiningAnimation = ({
@@ -25,14 +33,34 @@ export const GemMiningAnimation = ({
   eventDate,
   genreName,
   gemColor,
+  rarityResult,
 }: GemMiningAnimationProps) => {
-  const [phase, setPhase] = useState<'mining' | 'reveal' | 'summary'>('mining');
+  const [phase, setPhase] = useState<'mining' | 'calculating' | 'reveal' | 'summary'>('mining');
   const [pickaxeSwings, setPickaxeSwings] = useState(0);
+  const [slotValues, setSlotValues] = useState<{
+    venue: SlotValue;
+    city: SlotValue;
+    event: SlotValue;
+    volume: SlotValue;
+  }>({
+    venue: { current: 0, target: 0, revealed: false },
+    city: { current: 0, target: 0, revealed: false },
+    event: { current: 0, target: 0, revealed: false },
+    volume: { current: 0, target: 0, revealed: false },
+  });
+  const [totalRevealed, setTotalRevealed] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setPhase('mining');
       setPickaxeSwings(0);
+      setSlotValues({
+        venue: { current: 0, target: 0, revealed: false },
+        city: { current: 0, target: 0, revealed: false },
+        event: { current: 0, target: 0, revealed: false },
+        volume: { current: 0, target: 0, revealed: false },
+      });
+      setTotalRevealed(false);
       return;
     }
 
@@ -47,24 +75,94 @@ export const GemMiningAnimation = ({
       });
     }, 400);
 
-    // Transition to reveal after mining
-    const revealTimeout = setTimeout(() => {
-      setPhase('reveal');
+    // Transition to calculating if rarity exists, otherwise to reveal
+    const nextPhaseTimeout = setTimeout(() => {
+      if (rarityResult) {
+        setPhase('calculating');
+      } else {
+        setPhase('reveal');
+      }
     }, 1600);
-
-    // Transition to summary after reveal
-    const summaryTimeout = setTimeout(() => {
-      setPhase('summary');
-    }, 2800);
 
     return () => {
       clearInterval(swingInterval);
-      clearTimeout(revealTimeout);
-      clearTimeout(summaryTimeout);
+      clearTimeout(nextPhaseTimeout);
     };
-  }, [open]);
+  }, [open, rarityResult]);
+
+  // Calculating phase slot machine animation
+  useEffect(() => {
+    if (phase !== 'calculating' || !rarityResult) return;
+
+    const breakdown = getRarityBreakdown(rarityResult);
+    
+    // Set target values
+    setSlotValues({
+      venue: { current: 0, target: breakdown.venue.score, revealed: false },
+      city: { current: 0, target: breakdown.city.score, revealed: false },
+      event: { current: 0, target: breakdown.event.score, revealed: false },
+      volume: { current: 0, target: breakdown.volume.score, revealed: false },
+    });
+
+    // Animate slot machines one by one
+    const categories = ['venue', 'city', 'event', 'volume'] as const;
+    const targets = [breakdown.venue.score, breakdown.city.score, breakdown.event.score, breakdown.volume.score];
+    
+    categories.forEach((cat, index) => {
+      const startDelay = index * 600;
+      const spinDuration = 400;
+      const spinInterval = 50;
+      
+      // Start spinning
+      setTimeout(() => {
+        const spinner = setInterval(() => {
+          setSlotValues(prev => ({
+            ...prev,
+            [cat]: { ...prev[cat], current: Math.floor(Math.random() * 40) },
+          }));
+        }, spinInterval);
+
+        // Stop and reveal
+        setTimeout(() => {
+          clearInterval(spinner);
+          setSlotValues(prev => ({
+            ...prev,
+            [cat]: { current: targets[index], target: targets[index], revealed: true },
+          }));
+        }, spinDuration);
+      }, startDelay);
+    });
+
+    // Reveal total after all slots
+    setTimeout(() => {
+      setTotalRevealed(true);
+    }, 2800);
+
+    // Transition to reveal phase
+    setTimeout(() => {
+      setPhase('reveal');
+    }, 3800);
+
+    // Transition to summary
+    setTimeout(() => {
+      setPhase('summary');
+    }, 5000);
+  }, [phase, rarityResult]);
+
+  // Handle non-rarity flow
+  useEffect(() => {
+    if (phase === 'reveal' && !rarityResult) {
+      const summaryTimeout = setTimeout(() => {
+        setPhase('summary');
+      }, 1200);
+      return () => clearTimeout(summaryTimeout);
+    }
+  }, [phase, rarityResult]);
 
   if (!open) return null;
+
+  const tierInfo = rarityResult ? RARITY_TIERS[rarityResult.rarity_tier] : null;
+  const breakdown = rarityResult ? getRarityBreakdown(rarityResult) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
@@ -171,6 +269,128 @@ export const GemMiningAnimation = ({
           </div>
         )}
 
+        {/* Calculating Phase - Slot Machine */}
+        {phase === 'calculating' && breakdown && (
+          <div className="animate-fade-in w-full">
+            <h2 className="text-xl font-bold text-foreground mb-6">
+              Calculating Rarity...
+            </h2>
+
+            <div className="space-y-3 mb-6">
+              {/* Venue Scarcity */}
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
+                slotValues.venue.revealed 
+                  ? "bg-primary/10 border border-primary/30" 
+                  : "bg-muted/30 border border-muted/20"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Venue</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "font-mono text-lg font-bold transition-all",
+                    slotValues.venue.revealed ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {slotValues.venue.current}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/40</span>
+                </div>
+              </div>
+
+              {/* City Frequency */}
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
+                slotValues.city.revealed 
+                  ? "bg-primary/10 border border-primary/30" 
+                  : "bg-muted/30 border border-muted/20"
+              )}>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">City</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "font-mono text-lg font-bold transition-all",
+                    slotValues.city.revealed ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {slotValues.city.current}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/30</span>
+                </div>
+              </div>
+
+              {/* Event History */}
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
+                slotValues.event.revealed 
+                  ? "bg-primary/10 border border-primary/30" 
+                  : "bg-muted/30 border border-muted/20"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Event</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "font-mono text-lg font-bold transition-all",
+                    slotValues.event.revealed ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {slotValues.event.current}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/20</span>
+                </div>
+              </div>
+
+              {/* Yearly Volume */}
+              <div className={cn(
+                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
+                slotValues.volume.revealed 
+                  ? "bg-primary/10 border border-primary/30" 
+                  : "bg-muted/30 border border-muted/20"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Tour</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "font-mono text-lg font-bold transition-all",
+                    slotValues.volume.revealed ? "text-foreground" : "text-muted-foreground"
+                  )}>
+                    {slotValues.volume.current}
+                  </span>
+                  <span className="text-xs text-muted-foreground">/10</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Score */}
+            {totalRevealed && rarityResult && tierInfo && (
+              <div 
+                className="p-4 rounded-xl border-2 animate-scale-in"
+                style={{ 
+                  borderColor: tierInfo.color,
+                  background: `${tierInfo.color}15`,
+                }}
+              >
+                <div className="flex items-center justify-center gap-3">
+                  <span className="text-3xl">{tierInfo.emoji}</span>
+                  <div className="text-left">
+                    <div className="text-2xl font-bold" style={{ color: tierInfo.color }}>
+                      {rarityResult.total_score}/100
+                    </div>
+                    <div className="text-sm font-semibold" style={{ color: tierInfo.color }}>
+                      {tierInfo.label}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Reveal Phase */}
         {phase === 'reveal' && (
           <div className="animate-scale-in">
@@ -180,7 +400,7 @@ export const GemMiningAnimation = ({
               <div
                 className="absolute inset-0 rounded-full animate-pulse"
                 style={{
-                  background: `radial-gradient(circle, ${gemColor}60 0%, transparent 70%)`,
+                  background: `radial-gradient(circle, ${tierInfo?.color || gemColor}60 0%, transparent 70%)`,
                 }}
               />
               
@@ -190,8 +410,8 @@ export const GemMiningAnimation = ({
                   key={i}
                   className="absolute left-1/2 top-1/2 w-2 h-2 rounded-full"
                   style={{
-                    background: gemColor,
-                    boxShadow: `0 0 10px ${gemColor}`,
+                    background: tierInfo?.color || gemColor,
+                    boxShadow: `0 0 10px ${tierInfo?.color || gemColor}`,
                     animation: `float-out 1.5s ease-out forwards`,
                     animationDelay: `${i * 0.05}s`,
                     transform: `translate(-50%, -50%) rotate(${i * 30}deg) translateY(-20px)`,
@@ -206,9 +426,9 @@ export const GemMiningAnimation = ({
               >
                 <defs>
                   <linearGradient id="gemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={`${gemColor}CC`} />
-                    <stop offset="50%" stopColor={gemColor} />
-                    <stop offset="100%" stopColor={`${gemColor}99`} />
+                    <stop offset="0%" stopColor={`${tierInfo?.color || gemColor}CC`} />
+                    <stop offset="50%" stopColor={tierInfo?.color || gemColor} />
+                    <stop offset="100%" stopColor={`${tierInfo?.color || gemColor}99`} />
                   </linearGradient>
                   <filter id="gemGlow">
                     <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -223,7 +443,7 @@ export const GemMiningAnimation = ({
                 <path
                   d="M50 10 L15 40 L50 90 L85 40 Z"
                   fill="url(#gemGradient)"
-                  stroke={gemColor}
+                  stroke={tierInfo?.color || gemColor}
                   strokeWidth="1"
                   filter="url(#gemGlow)"
                 />
@@ -245,15 +465,25 @@ export const GemMiningAnimation = ({
               </svg>
             </div>
 
-            <p className="text-xl font-medium text-foreground">
-              Gem Discovered!
-            </p>
+            <div className="space-y-2">
+              {tierInfo && (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl">{tierInfo.emoji}</span>
+                  <span className="text-xl font-bold" style={{ color: tierInfo.color }}>
+                    {tierInfo.label}
+                  </span>
+                </div>
+              )}
+              <p className="text-lg text-foreground">
+                Gem Discovered!
+              </p>
+            </div>
           </div>
         )}
 
         {/* Summary Phase */}
         {phase === 'summary' && (
-          <div className="animate-fade-in space-y-6">
+          <div className="animate-fade-in space-y-6 w-full">
             {/* Gem with info */}
             <div className="relative">
               <svg
@@ -262,9 +492,9 @@ export const GemMiningAnimation = ({
               >
                 <defs>
                   <linearGradient id="summaryGemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={`${gemColor}CC`} />
-                    <stop offset="50%" stopColor={gemColor} />
-                    <stop offset="100%" stopColor={`${gemColor}99`} />
+                    <stop offset="0%" stopColor={`${tierInfo?.color || gemColor}CC`} />
+                    <stop offset="50%" stopColor={tierInfo?.color || gemColor} />
+                    <stop offset="100%" stopColor={`${tierInfo?.color || gemColor}99`} />
                   </linearGradient>
                   <filter id="summaryGemGlow">
                     <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -278,7 +508,7 @@ export const GemMiningAnimation = ({
                 <path
                   d="M50 10 L15 40 L50 90 L85 40 Z"
                   fill="url(#summaryGemGradient)"
-                  stroke={gemColor}
+                  stroke={tierInfo?.color || gemColor}
                   strokeWidth="1"
                   filter="url(#summaryGemGlow)"
                 />
@@ -292,6 +522,25 @@ export const GemMiningAnimation = ({
                 />
               </svg>
             </div>
+
+            {/* Rarity Badge */}
+            {tierInfo && rarityResult && (
+              <div 
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mx-auto"
+                style={{ 
+                  background: `${tierInfo.color}20`,
+                  border: `1px solid ${tierInfo.color}40`,
+                }}
+              >
+                <span className="text-xl">{tierInfo.emoji}</span>
+                <span className="font-bold" style={{ color: tierInfo.color }}>
+                  {tierInfo.label}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  ({rarityResult.total_score}/100)
+                </span>
+              </div>
+            )}
 
             {/* Artist and Event Info */}
             <div className="space-y-2">
@@ -320,6 +569,28 @@ export const GemMiningAnimation = ({
                 })}
               </p>
             </div>
+
+            {/* Rarity Breakdown */}
+            {breakdown && (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded bg-muted/20">
+                  <div className="text-muted-foreground">Venue</div>
+                  <div className="font-medium">{breakdown.venue.label}</div>
+                </div>
+                <div className="p-2 rounded bg-muted/20">
+                  <div className="text-muted-foreground">City</div>
+                  <div className="font-medium">{breakdown.city.label}</div>
+                </div>
+                <div className="p-2 rounded bg-muted/20">
+                  <div className="text-muted-foreground">Event</div>
+                  <div className="font-medium">{breakdown.event.label}</div>
+                </div>
+                <div className="p-2 rounded bg-muted/20">
+                  <div className="text-muted-foreground">Tour</div>
+                  <div className="font-medium">{breakdown.volume.label}</div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 w-full max-w-xs mx-auto pt-4">
