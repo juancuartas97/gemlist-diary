@@ -14,6 +14,61 @@ export type Database = {
   }
   public: {
     Tables: {
+      dj_performances: {
+        Row: {
+          city: string
+          created_at: string | null
+          dj_id: string
+          event_series_id: string | null
+          id: string
+          performance_date: string
+          source: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          city: string
+          created_at?: string | null
+          dj_id: string
+          event_series_id?: string | null
+          id?: string
+          performance_date: string
+          source?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          city?: string
+          created_at?: string | null
+          dj_id?: string
+          event_series_id?: string | null
+          id?: string
+          performance_date?: string
+          source?: string | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dj_performances_dj_id_fkey"
+            columns: ["dj_id"]
+            isOneToOne: false
+            referencedRelation: "djs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dj_performances_event_series_id_fkey"
+            columns: ["event_series_id"]
+            isOneToOne: false
+            referencedRelation: "event_series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dj_performances_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       djs: {
         Row: {
           created_at: string | null
@@ -492,6 +547,8 @@ export type Database = {
           is_rated: boolean | null
           primary_genre_id: string
           private_note: string | null
+          rarity_score: number | null
+          rarity_tier: string | null
           updated_at: string | null
           user_id: string
           venue_id: string | null
@@ -508,6 +565,8 @@ export type Database = {
           is_rated?: boolean | null
           primary_genre_id: string
           private_note?: string | null
+          rarity_score?: number | null
+          rarity_tier?: string | null
           updated_at?: string | null
           user_id: string
           venue_id?: string | null
@@ -524,6 +583,8 @@ export type Database = {
           is_rated?: boolean | null
           primary_genre_id?: string
           private_note?: string | null
+          rarity_score?: number | null
+          rarity_tier?: string | null
           updated_at?: string | null
           user_id?: string
           venue_id?: string | null
@@ -631,6 +692,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_rarity_score: {
+        Args: {
+          p_city: string
+          p_dj_id: string
+          p_event_date: string
+          p_event_series_id: string
+          p_venue_id: string
+        }
+        Returns: {
+          city_count: number
+          city_score: number
+          event_count: number
+          event_score: number
+          rarity_tier: string
+          total_score: number
+          venue_count: number
+          venue_score: number
+          volume_score: number
+          year_count: number
+        }[]
+      }
+      get_dj_city_count: {
+        Args: { p_city: string; p_dj_id: string }
+        Returns: number
+      }
+      get_dj_event_series_count: {
+        Args: { p_dj_id: string; p_series_id: string }
+        Returns: number
+      }
+      get_dj_venue_count: {
+        Args: { p_dj_id: string; p_venue_id: string }
+        Returns: number
+      }
+      get_dj_yearly_volume: { Args: { p_dj_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
