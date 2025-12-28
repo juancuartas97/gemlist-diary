@@ -1,15 +1,73 @@
-import { BarChart3, Gem } from 'lucide-react';
+import { BarChart3, Gem, Loader2 } from 'lucide-react';
 import { GemBadge } from '@/components/GemBadge';
 import { useAuth } from '@/hooks/useAuth';
-import { getSets, getTasteProfile } from '@/lib/storage';
+import { useUserGems, UserGem } from '@/hooks/useGemData';
+import { useMemo } from 'react';
+
+// Map rarity tier to gem badge type
+const rarityToGemType = (tier: string | null): string => {
+  switch (tier) {
+    case 'mythic': return 'Ruby';
+    case 'legendary': return 'Sapphire';
+    case 'rare': return 'Emerald';
+    case 'uncommon': return 'Amethyst';
+    default: return 'Amethyst';
+  }
+};
 
 export const HomeTab = () => {
   const { user, profile } = useAuth();
-  const sets = getSets();
-  const tasteProfile = getTasteProfile();
-  const recentSets = sets.slice(0, 4);
-  const topGenre = tasteProfile.topGenres[0];
-  const lastMined = sets[0];
+  const { gems, loading } = useUserGems(user?.id);
+
+  // Derive metrics from real gem data
+  const metrics = useMemo(() => {
+    if (!gems.length) {
+      return {
+        totalGems: 0,
+        recentGems: [] as UserGem[],
+        lastMined: null as UserGem | null,
+        topGenre: null as { name: string; weight: number } | null,
+        uniqueVenues: 0,
+        uniqueArtists: 0,
+      };
+    }
+
+    // Recent 4 gems
+    const recentGems = gems.slice(0, 4);
+    
+    // Last mined gem
+    const lastMined = gems[0] || null;
+    
+    // Calculate genre weights
+    const genreCounts: Record<string, number> = {};
+    gems.forEach(gem => {
+      const genreName = gem.genre?.name || 'Unknown';
+      genreCounts[genreName] = (genreCounts[genreName] || 0) + 1;
+    });
+    
+    const totalGems = gems.length;
+    const genreWeights = Object.entries(genreCounts)
+      .map(([name, count]) => ({
+        name,
+        weight: Math.round((count / totalGems) * 100),
+      }))
+      .sort((a, b) => b.weight - a.weight);
+    
+    const topGenre = genreWeights[0] || null;
+    
+    // Unique venues and artists
+    const uniqueVenues = new Set(gems.map(g => g.venue_id).filter(Boolean)).size;
+    const uniqueArtists = new Set(gems.map(g => g.dj_id)).size;
+
+    return {
+      totalGems,
+      recentGems,
+      lastMined,
+      topGenre,
+      uniqueVenues,
+      uniqueArtists,
+    };
+  }, [gems]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -24,6 +82,14 @@ export const HomeTab = () => {
   
   // Get avatar URL - prioritize profile avatar, then user metadata (Google/Apple)
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -59,15 +125,15 @@ export const HomeTab = () => {
             </div>
           </div>
           <div className="bg-card/60 px-3 py-1.5 rounded-full">
-            <span className="text-xs font-medium text-foreground">{sets.length} GEMS COLLECTED</span>
+            <span className="text-xs font-medium text-foreground">{metrics.totalGems} GEMS COLLECTED</span>
           </div>
         </div>
 
         {/* Stats Row */}
         <div className="flex gap-3">
           <div className="flex-1 glass-card p-4 rounded-xl text-center">
-            <p className="text-2xl font-bold text-primary">{topGenre?.weight || 0}%</p>
-            <p className="text-xs text-muted-foreground uppercase">{topGenre?.name || 'N/A'}</p>
+            <p className="text-2xl font-bold text-primary">{metrics.topGenre?.weight || 0}%</p>
+            <p className="text-xs text-muted-foreground uppercase">{metrics.topGenre?.name || 'N/A'}</p>
           </div>
           <div className="flex-1 glass-card p-4 rounded-xl">
             <div className="flex items-center gap-3">
@@ -77,7 +143,7 @@ export const HomeTab = () => {
               <div>
                 <p className="text-xs text-muted-foreground">LAST MINED</p>
                 <p className="text-sm font-semibold text-foreground truncate">
-                  {lastMined?.djName || 'None yet'}
+                  {metrics.lastMined?.dj?.stage_name || 'None yet'}
                 </p>
               </div>
             </div>
@@ -92,7 +158,7 @@ export const HomeTab = () => {
           <h2 className="text-lg font-bold text-foreground">Freshly Mined</h2>
         </div>
 
-        {recentSets.length === 0 ? (
+        {metrics.recentGems.length === 0 ? (
           <div className="glass-card p-8 rounded-2xl text-center">
             <Gem className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-muted-foreground">No gems mined yet.</p>
@@ -100,18 +166,20 @@ export const HomeTab = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {recentSets.map((set) => (
+            {metrics.recentGems.map((gem) => (
               <div
-                key={set.id}
+                key={gem.id}
                 className="glass-card p-4 rounded-xl"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <GemBadge type={set.gemType} size="md" />
+                  <GemBadge type={rarityToGemType(gem.rarity_tier) as any} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground truncate uppercase">
-                      {set.djName} @ {set.venue}
+                      {gem.dj?.stage_name || 'Unknown'} @ {gem.venue?.name || 'Unknown'}
                     </p>
-                    <p className="text-sm font-semibold text-foreground">{set.gemType}</p>
+                    <p className="text-sm font-semibold text-foreground capitalize">
+                      {gem.rarity_tier || 'common'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -123,19 +191,15 @@ export const HomeTab = () => {
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="glass-card p-3 rounded-xl text-center">
-          <p className="text-lg font-bold text-primary">{sets.length}</p>
+          <p className="text-lg font-bold text-primary">{metrics.totalGems}</p>
           <p className="text-xs text-muted-foreground">Total</p>
         </div>
         <div className="glass-card p-3 rounded-xl text-center">
-          <p className="text-lg font-bold text-foreground">
-            {new Set(sets.map(s => s.venue)).size}
-          </p>
+          <p className="text-lg font-bold text-foreground">{metrics.uniqueVenues}</p>
           <p className="text-xs text-muted-foreground">Venues</p>
         </div>
         <div className="glass-card p-3 rounded-xl text-center">
-          <p className="text-lg font-bold text-foreground">
-            {new Set(sets.map(s => s.djName)).size}
-          </p>
+          <p className="text-lg font-bold text-foreground">{metrics.uniqueArtists}</p>
           <p className="text-xs text-muted-foreground">Artists</p>
         </div>
       </div>
