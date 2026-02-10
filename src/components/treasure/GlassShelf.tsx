@@ -17,18 +17,9 @@ interface GlassShelfProps {
 export const GlassShelf = ({ depth, items, onGemClick, onClusterClick }: GlassShelfProps) => {
   if (items.length === 0) return null;
   
-  const scale = 1 - depth * 0.06;
-  const opacity = 1 - depth * 0.1;
-  const translateZ = -depth * 40;
-  const blurAmount = depth * 0.5;
-  
   return (
     <div 
       className="glass-shelf-container relative"
-      style={{
-        transform: `perspective(1000px) translateZ(${translateZ}px) scale(${scale})`,
-        opacity,
-      }}
     >
       {/* Frosted Smoked Glass Case */}
       <div className="relative rounded-xl overflow-hidden">
@@ -40,8 +31,8 @@ export const GlassShelf = ({ depth, items, onGemClick, onClusterClick }: GlassSh
               rgba(30, 30, 35, 0.6) 0%, 
               rgba(20, 20, 25, 0.75) 50%,
               rgba(15, 15, 18, 0.85) 100%)`,
-            backdropFilter: `blur(${12 + blurAmount}px) saturate(150%)`,
-            WebkitBackdropFilter: `blur(${12 + blurAmount}px) saturate(150%)`,
+            backdropFilter: `blur(12px) saturate(150%)`,
+            WebkitBackdropFilter: `blur(12px) saturate(150%)`,
           }}
         />
         

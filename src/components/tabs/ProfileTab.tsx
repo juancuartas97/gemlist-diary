@@ -7,9 +7,12 @@ import { GoalsList } from '@/components/goals/GoalsList';
 import { AddGoalModal } from '@/components/goals/AddGoalModal';
 import { getSets, getTasteProfile } from '@/lib/storage';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnlockedAchievements } from '@/hooks/useAchievements';
+import { Badge } from '@/components/ui/badge';
 
 export const ProfileTab = () => {
   const { user, profile } = useAuth();
+  const { data: unlockedAchievements } = useUnlockedAchievements(user?.id);
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
   const sets = getSets();
   const tasteProfile = getTasteProfile();
@@ -34,6 +37,37 @@ export const ProfileTab = () => {
           </p>
         )}
       </div>
+
+      {/* Badges */}
+      {unlockedAchievements && unlockedAchievements.length > 0 && (
+        <div className="glass-card p-5 rounded-2xl">
+          <h3 className="text-lg font-semibold text-foreground mb-3">Badges</h3>
+          <div className="flex flex-wrap gap-2">
+            {unlockedAchievements.map((ua) => {
+              const tierColors: Record<string, string> = {
+                bronze: 'bg-amber-700/20 text-amber-400 border-amber-700/40',
+                silver: 'bg-gray-400/20 text-gray-300 border-gray-400/40',
+                gold: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
+                platinum: 'bg-cyan-300/20 text-cyan-200 border-cyan-300/40',
+              };
+              const tier = ua.achievement.color_tier || 'bronze';
+              return (
+                <Badge
+                  key={ua.id}
+                  variant="outline"
+                  className={`${tierColors[tier] || tierColors.bronze} text-xs py-1 px-2.5`}
+                >
+                  <span className="mr-1">{ua.achievement.icon_emoji}</span>
+                  {ua.achievement.name}
+                  {ua.reference_name && (
+                    <span className="ml-1 opacity-70">· {ua.reference_name}</span>
+                  )}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Trophy Case */}
       <TrophyCase />
