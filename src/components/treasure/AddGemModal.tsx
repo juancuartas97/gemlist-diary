@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Music, MapPin, Calendar, Ticket, Plus } from 'lucide-react';
+import { Music, MapPin, Calendar, Ticket, Plus, Navigation, Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
@@ -7,6 +7,8 @@ import { FacetRatingsGroup } from '@/components/FacetRating';
 import { GemMiningAnimation } from './GemMiningAnimation';
 import { AddEventModal } from './AddEventModal';
 import { RecentEventCard, RecentEventsSkeleton } from './RecentEventCard';
+import { type CollectionMode } from './CollectionModeChooser';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { 
   useGenres, 
   useDJSearch, 
@@ -45,6 +47,7 @@ interface AddGemModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGemAdded: () => void;
+  mode?: CollectionMode;
 }
 
 interface CollectedGemInfo {
@@ -57,9 +60,17 @@ interface CollectedGemInfo {
   rarityResult?: RarityResult | null;
 }
 
-export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps) => {
+export const AddGemModal = ({ open, onOpenChange, onGemAdded, mode = 'memory' }: AddGemModalProps) => {
   const { user } = useAuth();
   const { genres } = useGenres();
+  const geolocation = useGeolocation();
+  
+  // Live mining verification state
+  const [locationVerified, setLocationVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verifyingLocation, setVerifyingLocation] = useState(false);
+  const [liveCoords, setLiveCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const isLive = mode === 'live';
   
   // Form state
   const [djQuery, setDjQuery] = useState('');
@@ -126,6 +137,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
     setShowNewDJGenreSelect(false);
     setShowMiningAnimation(false);
     setCollectedGemInfo(null);
+    setLocationVerified(false);
+    setVerificationError(null);
+    setVerifyingLocation(false);
+    setLiveCoords(null);
   };
 
   const handleDJSelect = (option: { id: string; label: string }) => {
@@ -248,9 +263,42 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
     setEventDate(performance.performance_date);
   };
 
+  // Live mining: verify location
+  const handleVerifyLocation = async () => {
+    setVerifyingLocation(true);
+    setVerificationError(null);
+    
+    try {
+      const venueLat = selectedVenue ? null : null; // Venues don't have coords in our schema yet — captured below
+      const venueLng = selectedVenue ? null : null;
+      
+      // For now, just capture the position. Full venue proximity check requires venue lat/lng.
+      const result = await geolocation.verifyLocation(
+        null, // venue lat — not available yet for all venues
+        null, // venue lng
+        selectedEvent?.start_at || null,
+        selectedEvent?.end_at || null
+      );
+      
+      setLiveCoords({ lat: result.lat, lng: result.lng });
+      
+      if (result.verified) {
+        setLocationVerified(true);
+        toast.success('Location verified! You\'re here.');
+      } else {
+        setVerificationError(result.reason || 'Location verification failed');
+      }
+    } catch (err: any) {
+      setVerificationError(err.message || 'Failed to get location');
+    }
+    
+    setVerifyingLocation(false);
+  };
+
   // Determine if form is valid for submission
   const canSubmit = () => {
     if (submitting) return false;
+    if (isLive && !locationVerified) return false;
     
     // Must have a DJ selected OR (have a DJ name AND a genre selected)
     if (selectedDJ) return true;
@@ -325,13 +373,16 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
         user_id: user.id,
         dj_id: djToUse.id,
         primary_genre_id: genreId,
-        event_date: eventDate,
+        event_date: isLive ? new Date().toISOString().split('T')[0] : eventDate,
         venue_id: selectedVenue?.id,
         event_id: selectedEvent?.id,
         rarity_score: rarityResult?.total_score,
         rarity_tier: rarityResult?.rarity_tier,
         facet_ratings: facetRatings,
         private_note: notes || undefined,
+        is_live_mined: isLive && locationVerified,
+        live_lat: liveCoords?.lat,
+        live_lng: liveCoords?.lng,
       });
 
       if (gem) {
@@ -399,9 +450,76 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                 boxShadow: `0 0 10px ${gemColor}50`
               }}
             />
-            Mine a New Gem
+            {isLive ? 'Mine Live' : 'Log a Memory'}
+            {isLive && (
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">
+                Verified
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
+
+        {/* Live Mining: Location Verification Banner */}
+        {isLive && (
+          <div className={cn(
+            "p-3 rounded-xl border text-sm",
+            locationVerified
+              ? "bg-emerald-500/10 border-emerald-500/30"
+              : verificationError
+              ? "bg-destructive/10 border-destructive/30"
+              : "bg-muted/30 border-border/20"
+          )}>
+            {locationVerified ? (
+              <div className="flex items-center gap-2 text-emerald-400">
+                <Shield className="w-4 h-4" />
+                <span className="font-medium">Location verified — you're here!</span>
+              </div>
+            ) : verificationError ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{verificationError}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleVerifyLocation}
+                  disabled={verifyingLocation}
+                  className="text-xs"
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-muted-foreground">
+                  Verify your location to earn a <span className="text-emerald-400 font-medium">Verified</span> gem with a unique DNA modifier.
+                </p>
+                <Button
+                  type="button"
+                  variant="neon"
+                  size="sm"
+                  onClick={handleVerifyLocation}
+                  disabled={verifyingLocation}
+                  className="w-full"
+                >
+                  {verifyingLocation ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Checking location...
+                    </>
+                  ) : (
+                    <>
+                      <Navigation className="w-4 h-4 mr-2" />
+                      Verify My Location
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-3">
@@ -522,17 +640,19 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
               createLabel="Add venue"
             />
             
-            {/* Date */}
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-              <Input
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                className="pl-10 bg-background/50 border-border/30"
-                required
-              />
-            </div>
+            {/* Date - hidden in live mode (auto-set to today) */}
+            {!isLive && (
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                <Input
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="pl-10 bg-background/50 border-border/30"
+                  required
+                />
+              </div>
+            )}
             
             {/* Notes */}
             <textarea
@@ -606,7 +726,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
               className="flex-1"
               disabled={!canSubmit()}
             >
-              {submitting ? 'Collecting...' : 'Collect Gem'}
+              {submitting ? 'Collecting...' : isLive ? 'Mine Verified Gem' : 'Collect Gem'}
             </Button>
           </div>
         </form>

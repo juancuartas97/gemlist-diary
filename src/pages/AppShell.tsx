@@ -7,6 +7,7 @@ import { HomeTab } from '@/components/tabs/HomeTab';
 import { TreasureChestTab } from '@/components/tabs/TreasureChestTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
+import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,9 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 
 const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [showModeChooser, setShowModeChooser] = useState(false);
   const [showAddGemModal, setShowAddGemModal] = useState(false);
+  const [collectionMode, setCollectionMode] = useState<CollectionMode>('memory');
   const navigate = useNavigate();
   const { user, profile, loading, isMockMode } = useAuth();
 
@@ -92,7 +95,7 @@ const AppShell = () => {
 
         {/* Floating Pickaxe Button */}
         <button
-          onClick={() => setShowAddGemModal(true)}
+          onClick={() => setShowModeChooser(true)}
           className="fixed bottom-24 right-4 z-30 w-14 h-14 rounded-full bg-primary shadow-2xl flex items-center justify-center hover:scale-110 transition-transform"
           style={{
             boxShadow: '0 0 30px hsl(var(--primary) / 0.5), 0 8px 32px rgba(0,0,0,0.4)'
@@ -130,11 +133,23 @@ const AppShell = () => {
         </div>
       </div>
 
+      {/* Collection Mode Chooser */}
+      <CollectionModeChooser
+        open={showModeChooser}
+        onSelect={(mode) => {
+          setCollectionMode(mode);
+          setShowModeChooser(false);
+          setShowAddGemModal(true);
+        }}
+        onClose={() => setShowModeChooser(false)}
+      />
+
       {/* Add Gem Modal */}
       <AddGemModal 
         open={showAddGemModal} 
         onOpenChange={setShowAddGemModal}
         onGemAdded={() => {}}
+        mode={collectionMode}
       />
     </div>
   );
