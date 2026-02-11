@@ -21,8 +21,9 @@ const Auth = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isOAuthLoading, setIsOAuthLoading] = useState<'google' | 'apple' | null>(null);
+  const [logoTaps, setLogoTaps] = useState(0);
   const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, enterMockMode } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -104,14 +105,24 @@ const Auth = () => {
       <div className="w-full max-w-[420px] mx-auto flex flex-col min-h-screen px-6 py-8 relative z-10">
         {/* Logo section */}
         <div className="flex flex-col items-center pt-8 mb-8">
-          <div className="flex items-center gap-3 mb-3">
+          <div 
+            className="flex items-center gap-3 mb-3 cursor-default select-none"
+            onClick={() => {
+              const newTaps = logoTaps + 1;
+              setLogoTaps(newTaps);
+              if (newTaps >= 5) {
+                enterMockMode();
+                navigate('/app');
+              }
+            }}
+          >
             <GemIcon className="w-12 h-12" />
             <h1 className="text-3xl font-bold text-foreground">
               Gem<span className="text-primary">List</span>
             </h1>
           </div>
           <p className="text-muted-foreground text-center">
-            Curate your sonic journey.
+            {logoTaps >= 3 ? `${5 - logoTaps} more taps...` : 'Curate your sonic journey.'}
           </p>
         </div>
 

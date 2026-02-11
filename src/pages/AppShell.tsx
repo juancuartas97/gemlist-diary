@@ -22,13 +22,13 @@ const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [showAddGemModal, setShowAddGemModal] = useState(false);
   const navigate = useNavigate();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isMockMode } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !isMockMode) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, isMockMode, navigate]);
 
   const handleSettingsClick = () => {
     navigate('/settings');
