@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { mockGems } from '@/lib/mockData';
 
 export interface Genre {
   id: string;
@@ -196,10 +198,16 @@ export const useVenueSearch = (query: string) => {
 };
 
 export const useUserGems = (userId: string | undefined) => {
-  const [gems, setGems] = useState<UserGem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isMockMode } = useAuth();
+  const [gems, setGems] = useState<UserGem[]>(isMockMode ? mockGems : []);
+  const [loading, setLoading] = useState(!isMockMode);
 
   const fetchGems = async () => {
+    if (isMockMode) {
+      setGems(mockGems);
+      setLoading(false);
+      return;
+    }
     if (!userId) {
       setGems([]);
       setLoading(false);

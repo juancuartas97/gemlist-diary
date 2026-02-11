@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { mockUnlockedAchievements } from '@/lib/mockData';
 
 export interface Achievement {
   id: string;
@@ -54,9 +56,11 @@ export const useAchievementDefinitions = () => {
 
 // Fetch user's achievement progress
 export const useUserAchievements = (userId: string | undefined) => {
+  const { isMockMode } = useAuth();
   return useQuery({
     queryKey: ['user-achievements', userId],
     queryFn: async () => {
+      if (isMockMode) return mockUnlockedAchievements;
       if (!userId) return [];
       
       const { data, error } = await supabase
@@ -71,15 +75,17 @@ export const useUserAchievements = (userId: string | undefined) => {
       if (error) throw error;
       return data as UserAchievement[];
     },
-    enabled: !!userId,
+    enabled: !!userId || isMockMode,
   });
 };
 
 // Get only unlocked achievements for trophy case display
 export const useUnlockedAchievements = (userId: string | undefined) => {
+  const { isMockMode } = useAuth();
   return useQuery({
     queryKey: ['unlocked-achievements', userId],
     queryFn: async () => {
+      if (isMockMode) return mockUnlockedAchievements;
       if (!userId) return [];
       
       const { data, error } = await supabase
@@ -95,7 +101,7 @@ export const useUnlockedAchievements = (userId: string | undefined) => {
       if (error) throw error;
       return data as UserAchievement[];
     },
-    enabled: !!userId,
+    enabled: !!userId || isMockMode,
   });
 };
 
