@@ -17,10 +17,12 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  isMockMode: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => void;
+  enterMockMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +32,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMockMode, setIsMockMode] = useState(false);
+
+  const enterMockMode = () => {
+    const mockUser = {
+      id: 'mock-user-dev-123',
+      email: 'dev@gemlist.test',
+      user_metadata: { display_name: 'Dev Tester' },
+    } as unknown as User;
+    const mockProfile: Profile = {
+      id: 'mock-user-dev-123',
+      username: 'devtester',
+      display_name: 'Dev Tester',
+      avatar_url: null,
+      bio: 'Testing account',
+      raver_rank: 'Crystal Collector',
+      total_gems: 21,
+    };
+    setUser(mockUser);
+    setProfile(mockProfile);
+    setSession({} as Session);
+    setIsMockMode(true);
+    setLoading(false);
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -112,7 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, isMockMode, signIn, signUp, signOut, refreshProfile, enterMockMode }}>
       {children}
     </AuthContext.Provider>
   );
