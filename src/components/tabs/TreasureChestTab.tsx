@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pickaxe } from 'lucide-react';
+import { Pickaxe, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,9 +43,41 @@ export const TreasureChestTab = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCluster, setSelectedCluster] = useState<UserGem[]>([]);
   const [showClusterModal, setShowClusterModal] = useState(false);
-  // Build unified shelf items (singles + clusters mixed together)
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterGenre, setFilterGenre] = useState<string | null>(null);
+  const [filterArtist, setFilterArtist] = useState<string | null>(null);
+  const [filterVenue, setFilterVenue] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'artist' | 'rarity'>('date');
+  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
+
+  // Extract unique filter options from gems
+  const filterOptions = useMemo(() => {
+    const genres = [...new Set(gems.map(g => g.genre?.name).filter(Boolean))].sort() as string[];
+    const artists = [...new Set(gems.map(g => g.dj?.stage_name).filter(Boolean))].sort() as string[];
+    const venues = [...new Set(gems.map(g => g.venue?.name).filter(Boolean))].sort() as string[];
+    return { genres, artists, venues };
+  }, [gems]);
+
+  // Apply filters
+  const filteredGems = useMemo(() => {
+    return gems.filter(g => {
+      if (filterGenre && g.genre?.name !== filterGenre) return false;
+      if (filterArtist && g.dj?.stage_name !== filterArtist) return false;
+      if (filterVenue && g.venue?.name !== filterVenue) return false;
+      return true;
+    });
+  }, [gems, filterGenre, filterArtist, filterVenue]);
+
+  const hasActiveFilters = filterGenre || filterArtist || filterVenue;
+
+  const clearFilters = () => {
+    setFilterGenre(null);
+    setFilterArtist(null);
+    setFilterVenue(null);
+  };
+  // Build unified shelf items from filtered gems
   const shelfItems = useMemo((): ShelfItem[] => {
-    const groupedByDJ = groupGemsByDJ(gems);
+    const groupedByDJ = groupGemsByDJ(filteredGems);
     const items: ShelfItem[] = [];
     
     groupedByDJ.forEach((djGems) => {
@@ -56,19 +88,30 @@ export const TreasureChestTab = () => {
       }
     });
     
-    // Sort by most recent event date
+    // Sort items
     items.sort((a, b) => {
+      const gemA = a.type === 'single' ? a.gem : a.gems[0];
+      const gemB = b.type === 'single' ? b.gem : b.gems[0];
+      const dir = sortDir === 'desc' ? -1 : 1;
+      
+      if (sortBy === 'artist') {
+        return dir * (gemA.dj?.stage_name || '').localeCompare(gemB.dj?.stage_name || '');
+      }
+      if (sortBy === 'rarity') {
+        return dir * ((gemA.rarity_score || 0) - (gemB.rarity_score || 0));
+      }
+      // date (default)
       const dateA = a.type === 'single' 
         ? new Date(a.gem.event_date) 
         : new Date(Math.max(...a.gems.map(g => new Date(g.event_date).getTime())));
       const dateB = b.type === 'single' 
         ? new Date(b.gem.event_date) 
         : new Date(Math.max(...b.gems.map(g => new Date(g.event_date).getTime())));
-      return dateB.getTime() - dateA.getTime();
+      return dir * (dateA.getTime() - dateB.getTime());
     });
     
     return items;
-  }, [gems]);
+  }, [filteredGems, sortBy, sortDir]);
 
   // Split items into shelves (3 items per shelf)
   const shelves = useMemo(() => {
@@ -125,7 +168,118 @@ export const TreasureChestTab = () => {
         <div className="pt-4 pb-6 px-4 text-center">
           <h1 className="text-2xl font-bold text-foreground/90 tracking-wide">Treasure Chest</h1>
           <p className="text-xs text-muted-foreground/60 mt-1 tracking-widest uppercase">Your Collection</p>
+          
+          {/* Filter & Sort Controls */}
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                hasActiveFilters 
+                  ? 'bg-primary/20 text-primary border border-primary/30' 
+                  : 'bg-muted/20 text-muted-foreground border border-border/30 hover:bg-muted/30'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              Filter
+              {hasActiveFilters && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+            </button>
+            
+            <button
+              onClick={() => {
+                const cycle: ('date' | 'artist' | 'rarity')[] = ['date', 'artist', 'rarity'];
+                const idx = cycle.indexOf(sortBy);
+                setSortBy(cycle[(idx + 1) % cycle.length]);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-muted/20 text-muted-foreground border border-border/30 hover:bg-muted/30 transition-all"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              {sortBy === 'date' ? 'Date' : sortBy === 'artist' ? 'Artist' : 'Rarity'}
+            </button>
+            
+            <button
+              onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+              className="px-2 py-1.5 rounded-full text-xs font-medium bg-muted/20 text-muted-foreground border border-border/30 hover:bg-muted/30 transition-all"
+            >
+              {sortDir === 'desc' ? '↓' : '↑'}
+            </button>
+          </div>
         </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div className="mx-4 mb-4 glass-card p-4 rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Filters</span>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="text-xs text-primary flex items-center gap-1">
+                  <X className="w-3 h-3" /> Clear all
+                </button>
+              )}
+            </div>
+            
+            {/* Genre filter */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Genre</label>
+              <div className="flex flex-wrap gap-1.5">
+                {filterOptions.genres.map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setFilterGenre(filterGenre === g ? null : g)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      filterGenre === g 
+                        ? 'bg-primary/30 text-primary border border-primary/40' 
+                        : 'bg-muted/20 text-muted-foreground border border-border/20 hover:bg-muted/30'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Artist filter */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Artist</label>
+              <div className="flex flex-wrap gap-1.5">
+                {filterOptions.artists.map(a => (
+                  <button
+                    key={a}
+                    onClick={() => setFilterArtist(filterArtist === a ? null : a)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      filterArtist === a 
+                        ? 'bg-primary/30 text-primary border border-primary/40' 
+                        : 'bg-muted/20 text-muted-foreground border border-border/20 hover:bg-muted/30'
+                    }`}
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Venue filter */}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Venue</label>
+              <div className="flex flex-wrap gap-1.5">
+                {filterOptions.venues.map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setFilterVenue(filterVenue === v ? null : v)}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      filterVenue === v 
+                        ? 'bg-primary/30 text-primary border border-primary/40' 
+                        : 'bg-muted/20 text-muted-foreground border border-border/20 hover:bg-muted/30'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* The Lid - Trophy Case with Festival Badges */}
         <div className="trophy-lid mx-4 mb-8">
