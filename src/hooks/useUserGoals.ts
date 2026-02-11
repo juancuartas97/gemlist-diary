@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { mockActiveGoals, mockGoals, mockTargetEvents } from '@/lib/mockData';
 
 export interface UserGoal {
   id: string;
@@ -23,9 +25,11 @@ export interface CreateGoalParams {
 
 // Fetch user's active goals (not completed)
 export const useActiveGoals = (userId: string | undefined) => {
+  const { isMockMode } = useAuth();
   return useQuery({
     queryKey: ['user-goals', userId, 'active'],
     queryFn: async () => {
+      if (isMockMode) return mockActiveGoals;
       if (!userId) return [];
       
       const { data, error } = await supabase
@@ -38,15 +42,17 @@ export const useActiveGoals = (userId: string | undefined) => {
       if (error) throw error;
       return data as UserGoal[];
     },
-    enabled: !!userId,
+    enabled: !!userId || isMockMode,
   });
 };
 
 // Fetch all user goals including completed
 export const useAllGoals = (userId: string | undefined) => {
+  const { isMockMode } = useAuth();
   return useQuery({
     queryKey: ['user-goals', userId, 'all'],
     queryFn: async () => {
+      if (isMockMode) return mockGoals;
       if (!userId) return [];
       
       const { data, error } = await supabase
@@ -122,9 +128,11 @@ export const useDeleteGoal = () => {
 
 // Get target events (ghost gems) for the shelf display
 export const useTargetEvents = (userId: string | undefined) => {
+  const { isMockMode } = useAuth();
   return useQuery({
     queryKey: ['target-events', userId],
     queryFn: async () => {
+      if (isMockMode) return mockTargetEvents;
       if (!userId) return [];
       
       const { data, error } = await supabase
@@ -138,15 +146,17 @@ export const useTargetEvents = (userId: string | undefined) => {
       if (error) throw error;
       return data as UserGoal[];
     },
-    enabled: !!userId,
+    enabled: !!userId || isMockMode,
   });
 };
 
 // Get holy grail artists
 export const useHolyGrailArtists = (userId: string | undefined) => {
+  const { isMockMode } = useAuth();
   return useQuery({
     queryKey: ['holy-grail-artists', userId],
     queryFn: async () => {
+      if (isMockMode) return mockGoals.filter(g => g.goal_type === 'holy_grail_artist' && !g.completed_at);
       if (!userId) return [];
       
       const { data, error } = await supabase
@@ -159,6 +169,6 @@ export const useHolyGrailArtists = (userId: string | undefined) => {
       if (error) throw error;
       return data as UserGoal[];
     },
-    enabled: !!userId,
+    enabled: !!userId || isMockMode,
   });
 };
