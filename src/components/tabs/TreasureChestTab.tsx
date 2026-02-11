@@ -7,6 +7,7 @@ import { useTargetEvents, useDeleteGoal } from '@/hooks/useUserGoals';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf, type ShelfItem } from '@/components/treasure/GlassShelf';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
+import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import { ClusterViewModal } from '@/components/treasure/ClusterViewModal';
 import { GhostGem } from '@/components/goals/GhostGem';
@@ -39,6 +40,8 @@ export const TreasureChestTab = () => {
   const { data: targetEvents } = useTargetEvents(user?.id);
   const deleteGoal = useDeleteGoal();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showModeChooser, setShowModeChooser] = useState(false);
+  const [collectionMode, setCollectionMode] = useState<CollectionMode>('memory');
   const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCluster, setSelectedCluster] = useState<UserGem[]>([]);
@@ -354,7 +357,7 @@ export const TreasureChestTab = () => {
       {/* Mine a Gem Button - Inside frame */}
       <div className="sticky bottom-20 left-0 right-0 flex justify-center pb-4 z-50">
         <Button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => setShowModeChooser(true)}
           className="px-6 py-3 h-auto rounded-full shadow-2xl bg-primary/90 hover:bg-primary border border-primary-foreground/20 gap-2"
           style={{
             boxShadow: '0 0 30px hsl(var(--gem-emerald) / 0.4), 0 8px 32px rgba(0,0,0,0.5)'
@@ -365,11 +368,23 @@ export const TreasureChestTab = () => {
         </Button>
       </div>
 
+      {/* Collection Mode Chooser */}
+      <CollectionModeChooser
+        open={showModeChooser}
+        onSelect={(mode) => {
+          setCollectionMode(mode);
+          setShowModeChooser(false);
+          setShowAddModal(true);
+        }}
+        onClose={() => setShowModeChooser(false)}
+      />
+
       {/* Add Gem Modal */}
       <AddGemModal 
         open={showAddModal} 
         onOpenChange={setShowAddModal}
         onGemAdded={handleGemAdded}
+        mode={collectionMode}
       />
 
       {/* Cluster View Modal */}

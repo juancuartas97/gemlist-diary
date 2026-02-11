@@ -639,7 +639,10 @@ export type Database = {
           gem_dna: string | null
           id: string
           is_genesis_mint: boolean | null
+          is_live_mined: boolean
           is_rated: boolean | null
+          live_lat: number | null
+          live_lng: number | null
           mint_number: number | null
           modifiers: string[] | null
           primary_genre_id: string
@@ -661,7 +664,10 @@ export type Database = {
           gem_dna?: string | null
           id?: string
           is_genesis_mint?: boolean | null
+          is_live_mined?: boolean
           is_rated?: boolean | null
+          live_lat?: number | null
+          live_lng?: number | null
           mint_number?: number | null
           modifiers?: string[] | null
           primary_genre_id: string
@@ -683,7 +689,10 @@ export type Database = {
           gem_dna?: string | null
           id?: string
           is_genesis_mint?: boolean | null
+          is_live_mined?: boolean
           is_rated?: boolean | null
+          live_lat?: number | null
+          live_lng?: number | null
           mint_number?: number | null
           modifiers?: string[] | null
           primary_genre_id?: string

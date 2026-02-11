@@ -317,6 +317,9 @@ export const addUserGem = async (gem: {
     crowd: number | null;
   };
   private_note?: string;
+  is_live_mined?: boolean;
+  live_lat?: number;
+  live_lng?: number;
 }): Promise<UserGem | null> => {
   const { data, error } = await supabase
     .from('user_gems')
