@@ -1,47 +1,82 @@
 
-# Fill Mock Account with In-Memory Test Data
 
-## Problem
-Mock mode uses a fake user ID with no real Supabase JWT, so all RLS-protected queries return empty results. The UI appears blank.
+# Skeuomorphic Treasure Chest Redesign
 
-## Solution
-Create a centralized mock data file and update all data-fetching hooks to return this mock data when `isMockMode` is true, bypassing Supabase entirely.
+## Overview
+Transform the Treasure Chest tab into a visually immersive skeuomorphic treasure chest. The tab icon becomes a chest icon, and the page itself is redesigned to look like a physical treasure chest with a wooden body, metal hardware, a lock/key motif, and gems visible inside.
 
-## Steps
+## Changes
 
-### 1. Create `src/lib/mockData.ts`
-A single file containing realistic test data for all hooks:
-- **21 mock gems** spanning all 5 rarity tiers (mythic, legendary, rare, uncommon, common), multiple genres (Techno, House, Trance, DnB, Dubstep, etc.), various DJs (Skrillex, Carl Cox, Charlotte de Witte, etc.), venues (Berghain, Fabric, Warehouse Project, etc.), with facet ratings, gem DNA strings, mint numbers, and modifiers (G, Q).
-- **Mock achievements** (unlocked): "First Gem", "Artist Devotee" for Skrillex, "Venue Regular" for Berghain, "Genre Explorer", etc. with appropriate tiers (bronze, silver, gold).
-- **Mock goals**: 1 holy grail artist, 1 target event, 1 holy grail venue -- some active, one completed.
-- **Mock taste profile** with genre weights derived from the gems.
+### 1. Tab Icon -- Replace Gem with Chest
+In `AppShell.tsx`, replace the `Gem` lucide icon with a custom `TreasureChestIcon` SVG component that depicts a small treasure chest silhouette (lid, body, clasp). This gives the bottom nav a distinctive look.
 
-### 2. Update `src/hooks/useGemData.ts` - `useUserGems`
-Add an early return when `isMockMode` is true:
-- Import `useAuth` and check `isMockMode`
-- If true, return the mock gems array immediately with `loading: false`
-- No Supabase calls made
+### 2. New Component: `TreasureChestIcon`
+Create `src/components/icons/TreasureChestIcon.tsx` -- a small SVG icon component (24x24) depicting a treasure chest outline suitable for the tab bar. Styled with `currentColor` so it inherits active/inactive tab colors.
 
-### 3. Update `src/hooks/useAchievements.ts` - `useUnlockedAchievements`
-- When `isMockMode` is true, return mock unlocked achievements directly
-- Same pattern for `useUserAchievements` and `useAchievementDefinitions`
+### 3. Redesign TreasureChestTab Page Layout
+Restructure the page into three visual zones that together form a chest:
 
-### 4. Update `src/hooks/useUserGoals.ts` - `useActiveGoals`, `useTargetEvents`, `useAllGoals`
-- When `isMockMode` is true, return mock goals data
-- Mutations (create/delete goal) will show toasts but won't persist
+**A. The Lid (top)**
+- The existing trophy-lid with festival enamel pins becomes the **chest lid**
+- Styled with dark wood grain texture (CSS gradients), gold metal corners/hinges, and a subtle curved top
+- The enamel pins sit on the inner lid like stickers on a suitcase
+- A decorative gold hinge strip connects the lid to the body
 
-### 5. Expose `isMockMode` more broadly
-- The hooks already have access to `useAuth()`, so they can check `isMockMode` internally
+**B. The Lock & Key Strip (middle divider)**
+- Between lid and body, a decorative metal strip with a centered lock/keyhole motif
+- The lock is a CSS-rendered padlock silhouette in gold/brass
+- A small key icon sits beside it (from lucide `KeyRound`)
+- Filter/sort controls are integrated into this strip as small metallic buttons, like hardware on the chest
 
-## What the user will see
-After tapping the logo 5 times on the login screen:
-- **Home tab**: Greeting as "Dev", 21 gems total, top genre %, last mined gem, recent gems grid, venue/artist counts
-- **Treasure Chest**: All 21 gems on glass shelves, filterable by genre/artist/venue, sortable by date/rarity/artist
-- **Profile**: Enamel pin badges for unlocked achievements, taste map data, stats
-- **Goals**: Active quests with ghost gems
+**C. The Body (main area with gems)**
+- The glass shelves are wrapped in a container styled as the **inside of the chest**
+- Dark velvet-textured background (deep purple/crimson radial gradient with subtle fabric noise)
+- The existing GlassShelf components sit inside as display trays
+- Side walls visible as subtle wooden panels with metal corner brackets
+- The "Mine a Gem" button sits at the bottom as a brass plate
+
+### 4. CSS Additions in `index.css`
+New styles for:
+- `.chest-lid` -- wood grain via repeating linear gradients, rounded top corners, gold border accents
+- `.chest-hinge` -- metallic strip connecting lid to body
+- `.chest-lock` -- centered padlock with keyhole cutout, brass gradient
+- `.chest-body` -- velvet interior background, wooden side borders, metal corner brackets
+- `.chest-corner-bracket` -- gold/brass corner decorations on the chest body
+- `.wood-grain` -- reusable wood texture using layered CSS gradients (dark walnut tone to match the cyberpunk-luxury theme)
+
+### 5. Empty State
+When the chest has no gems, show a dark interior with a single soft glow in the center and text: "Your chest awaits its first gem..." with the keyhole icon subtly glowing.
+
+## Visual Structure (top to bottom)
+
+```text
++------------------------------------------+
+|  ~~~~ Curved Chest Lid (wood grain) ~~~~ |
+|  [Pin] [Pin] [Pin] [Pin] ... (scrollable)|
+|  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ |
++====== Gold Hinge Strip ==================+
+|   [Filter]  [Lock Icon]  [Sort]          |
++====== Metal Divider =====================+
+|                                          |
+|   +------+   +------+   +------+        |
+|   | Gem  |   | Gem  |   |Clstr |   <-- Velvet interior
+|   +------+   +------+   +------+        |
+|                                          |
+|   +------+   +------+   +------+        |
+|   | Gem  |   | Gem  |   | Gem  |        |
+|   +------+   +------+   +------+        |
+|                                          |
+|          [ Mine a Gem ]                  |
+|  ~~~~~~~~ Wooden Floor ~~~~~~~~~~~~~~~~~ |
++------------------------------------------+
+```
 
 ## Technical Details
-- All mock data lives in one file for easy editing
-- No database or migration changes needed
-- Hooks detect mock mode via `useAuth().isMockMode` and short-circuit before any Supabase call
-- React Query hooks will use `initialData` or `queryFn` override pattern to return mock data
+
+- **Files to create**: `src/components/icons/TreasureChestIcon.tsx`
+- **Files to modify**: `src/pages/AppShell.tsx` (tab icon swap), `src/components/tabs/TreasureChestTab.tsx` (layout restructure), `src/index.css` (new chest styles)
+- **No new dependencies** -- all textures are CSS gradients and SVG
+- **Existing components preserved** -- `GlassShelf`, `CrystalGem`, `EnamelPin`, `GemCluster` all remain unchanged; only their container/wrapper changes
+- **Dark wood palette**: `#1a1008`, `#2d1a0e`, `#3d2816` -- warm walnut tones that complement the existing cyberpunk-luxury theme
+- **Metal accents**: Gold/brass gradients using amber/yellow HSL values already in the design system (`--gem-amber`)
+
