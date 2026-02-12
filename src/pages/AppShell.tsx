@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Gem, User as UserIcon, Settings, Pickaxe } from 'lucide-react';
+import { Home, User as UserIcon, Settings, Pickaxe } from 'lucide-react';
+import { TreasureChestIcon } from '@/components/icons/TreasureChestIcon';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { GemIcon } from '@/components/GemIcon';
 import { HomeTab } from '@/components/tabs/HomeTab';
@@ -15,7 +16,7 @@ type Tab = 'home' | 'treasure' | 'profile';
 
 const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'home', label: 'Home', icon: Home },
-  { id: 'treasure', label: 'Treasure Chest', icon: Gem },
+  { id: 'treasure', label: 'Chest', icon: TreasureChestIcon },
   { id: 'profile', label: 'Profile', icon: UserIcon },
 ];
 

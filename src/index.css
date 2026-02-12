@@ -154,148 +154,362 @@
   }
 }
 
-/* Treasure Chest Styles */
+/* ============================
+   SKEUOMORPHIC TREASURE CHEST
+   ============================ */
+
 .treasure-chest {
   background: hsl(var(--void));
 }
 
-.bg-void {
-  background: radial-gradient(ellipse at 50% 0%, hsl(150 20% 6%) 0%, hsl(var(--void)) 70%);
-}
-
-.nebula-smoke {
-  position: absolute;
-  inset: 0;
-  background: 
-    radial-gradient(ellipse at 20% 30%, hsl(var(--gem-amethyst) / 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 60%, hsl(var(--gem-sapphire) / 0.03) 0%, transparent 40%),
-    radial-gradient(ellipse at 50% 80%, hsl(var(--gem-emerald) / 0.03) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-/* The Lid - Brushed Metal Trophy Case */
-.trophy-lid {
-  position: relative;
-  background: linear-gradient(180deg, 
-    #1a1a1a 0%, 
-    #0f0f0f 50%,
-    #151515 100%
-  );
-  border-radius: 1rem;
-  overflow: hidden;
-  border-bottom: 1px solid hsl(0 0% 100% / 0.1);
-  box-shadow: 
-    0 25px 50px -12px rgba(0, 0, 0, 0.8),
-    0 12px 24px -8px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 hsl(0 0% 100% / 0.05);
-}
-
-.trophy-lid-texture {
-  position: absolute;
-  inset: 0;
-  background: 
-    /* Horizontal brushed lines */
+/* === WOOD GRAIN TEXTURE === */
+.wood-grain {
+  background:
     repeating-linear-gradient(
-      0deg,
+      85deg,
       transparent 0px,
-      transparent 1px,
-      hsl(0 0% 100% / 0.02) 1px,
-      hsl(0 0% 100% / 0.02) 2px
+      transparent 3px,
+      hsl(30 40% 12% / 0.15) 3px,
+      hsl(30 40% 12% / 0.15) 4px
     ),
-    /* Subtle noise effect via radial gradients */
-    radial-gradient(ellipse at 20% 50%, hsl(0 0% 100% / 0.02) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 50%, hsl(0 0% 100% / 0.015) 0%, transparent 50%);
+    repeating-linear-gradient(
+      92deg,
+      transparent 0px,
+      transparent 6px,
+      hsl(25 50% 10% / 0.1) 6px,
+      hsl(25 50% 10% / 0.1) 7px
+    ),
+    linear-gradient(180deg, #2d1a0e 0%, #1a1008 60%, #2d1a0e 100%);
+}
+
+/* === THE LID === */
+.chest-lid {
+  position: relative;
+  border-radius: 1rem 1rem 0 0;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(
+      85deg,
+      transparent 0px, transparent 3px,
+      hsl(30 40% 12% / 0.15) 3px, hsl(30 40% 12% / 0.15) 4px
+    ),
+    repeating-linear-gradient(
+      92deg,
+      transparent 0px, transparent 6px,
+      hsl(25 50% 10% / 0.1) 6px, hsl(25 50% 10% / 0.1) 7px
+    ),
+    linear-gradient(180deg, #3d2816 0%, #2d1a0e 50%, #1a1008 100%);
+  border: 1px solid hsl(38 60% 30% / 0.3);
+  border-bottom: none;
+  box-shadow:
+    inset 0 2px 4px hsl(38 60% 50% / 0.08),
+    0 -4px 20px hsl(0 0% 0% / 0.5);
+}
+
+.chest-lid-texture {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, hsl(38 60% 40% / 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, hsl(25 50% 30% / 0.04) 0%, transparent 40%);
   pointer-events: none;
 }
 
-.trophy-lid-edge {
+.chest-lid-edge {
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    hsl(40 70% 55% / 0.4) 20%,
-    hsl(40 80% 65% / 0.6) 50%,
-    hsl(40 70% 55% / 0.4) 80%,
+  background: linear-gradient(90deg,
+    transparent 0%,
+    hsl(40 70% 55% / 0.5) 20%,
+    hsl(40 80% 65% / 0.7) 50%,
+    hsl(40 70% 55% / 0.5) 80%,
     transparent 100%
   );
 }
 
-/* Hide scrollbar utility */
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Legacy trophy-case styles for backwards compatibility */
-.trophy-case {
-  position: relative;
-  background: linear-gradient(180deg, 
-    hsl(150 15% 6%) 0%, 
-    hsl(150 10% 8%) 50%,
-    hsl(150 15% 5%) 100%
-  );
-  border-radius: 1rem;
-  overflow: hidden;
-  border: 1px solid hsl(var(--border) / 0.3);
-}
-
-.trophy-case-texture {
+/* === CORNER BRACKETS === */
+.chest-corner-bracket {
   position: absolute;
-  inset: 0;
-  background: 
+  width: 24px;
+  height: 24px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.chest-corner-bracket::before,
+.chest-corner-bracket::after {
+  content: '';
+  position: absolute;
+  background: linear-gradient(135deg, hsl(40 70% 55% / 0.6), hsl(40 50% 40% / 0.3));
+  border-radius: 1px;
+}
+
+.chest-corner-bracket::before {
+  width: 16px;
+  height: 3px;
+}
+
+.chest-corner-bracket::after {
+  width: 3px;
+  height: 16px;
+}
+
+.chest-corner-tl { top: 4px; left: 4px; }
+.chest-corner-tl::before { top: 0; left: 0; }
+.chest-corner-tl::after { top: 0; left: 0; }
+
+.chest-corner-tr { top: 4px; right: 4px; }
+.chest-corner-tr::before { top: 0; right: 0; left: auto; }
+.chest-corner-tr::after { top: 0; right: 0; left: auto; }
+
+.chest-corner-bl { bottom: 4px; left: 4px; }
+.chest-corner-bl::before { bottom: 0; left: 0; top: auto; }
+.chest-corner-bl::after { bottom: 0; left: 0; top: auto; }
+
+.chest-corner-br { bottom: 4px; right: 4px; }
+.chest-corner-br::before { bottom: 0; right: 0; left: auto; top: auto; }
+.chest-corner-br::after { bottom: 0; right: 0; left: auto; top: auto; }
+
+/* === HINGE STRIP === */
+.chest-hinge {
+  position: relative;
+  height: 10px;
+  background: linear-gradient(180deg,
+    hsl(40 50% 30%) 0%,
+    hsl(40 60% 45%) 30%,
+    hsl(40 70% 55%) 50%,
+    hsl(40 60% 40%) 70%,
+    hsl(40 40% 25%) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 hsl(40 80% 70% / 0.3),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.4),
+    0 2px 8px hsl(0 0% 0% / 0.5);
+}
+
+.chest-hinge-bolt {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, hsl(40 80% 70%), hsl(40 50% 35%));
+  box-shadow: inset 0 1px 1px hsl(40 80% 80% / 0.4), 0 1px 2px hsl(0 0% 0% / 0.5);
+}
+
+.chest-hinge-bolt-left { left: 16px; }
+.chest-hinge-bolt-right { right: 16px; }
+
+/* === LOCK & KEY STRIP === */
+.chest-lock-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg,
+    hsl(30 20% 12%) 0%,
+    hsl(30 15% 10%) 100%
+  );
+  border-left: 1px solid hsl(38 60% 30% / 0.3);
+  border-right: 1px solid hsl(38 60% 30% / 0.3);
+}
+
+.chest-lock-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, hsl(40 70% 55%), hsl(40 50% 30%));
+  color: hsl(30 20% 12%);
+  box-shadow:
+    0 2px 8px hsl(0 0% 0% / 0.5),
+    inset 0 1px 1px hsl(40 80% 75% / 0.3);
+}
+
+.chest-keyhole {
+  position: absolute;
+  bottom: 4px;
+  width: 3px;
+  height: 5px;
+  background: hsl(30 20% 10%);
+  border-radius: 0 0 1px 1px;
+}
+
+.chest-hardware-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(38 40% 60%);
+  background: linear-gradient(180deg, hsl(30 20% 16%) 0%, hsl(30 15% 12%) 100%);
+  border: 1px solid hsl(38 40% 25% / 0.4);
+  transition: all 0.2s;
+  box-shadow: inset 0 1px 0 hsl(38 40% 30% / 0.1), 0 1px 3px hsl(0 0% 0% / 0.3);
+}
+
+.chest-hardware-btn:hover {
+  background: linear-gradient(180deg, hsl(30 20% 20%) 0%, hsl(30 15% 15%) 100%);
+  color: hsl(38 60% 75%);
+}
+
+.chest-hardware-btn.active {
+  border-color: hsl(38 70% 50% / 0.5);
+  color: hsl(38 80% 65%);
+  box-shadow: 0 0 8px hsl(38 70% 50% / 0.2);
+}
+
+.chest-hardware-btn.small {
+  padding: 4px 8px;
+}
+
+/* === FILTER PANEL (inside chest) === */
+.chest-filter-panel {
+  padding: 12px 16px;
+  background: hsl(30 15% 8% / 0.9);
+  border-left: 1px solid hsl(38 60% 30% / 0.3);
+  border-right: 1px solid hsl(38 60% 30% / 0.3);
+}
+
+.chest-filter-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(38 30% 55%);
+  background: hsl(30 15% 14%);
+  border: 1px solid hsl(38 30% 25% / 0.3);
+  transition: all 0.2s;
+}
+
+.chest-filter-chip:hover {
+  background: hsl(30 15% 18%);
+}
+
+.chest-filter-chip.active {
+  background: hsl(38 50% 25% / 0.4);
+  color: hsl(38 80% 70%);
+  border-color: hsl(38 70% 50% / 0.5);
+}
+
+/* === THE BODY === */
+.chest-body {
+  position: relative;
+  border-radius: 0 0 1rem 1rem;
+  overflow: hidden;
+  border: 1px solid hsl(38 60% 30% / 0.3);
+  border-top: none;
+  background:
+    repeating-linear-gradient(
+      85deg,
+      transparent 0px, transparent 3px,
+      hsl(30 40% 12% / 0.12) 3px, hsl(30 40% 12% / 0.12) 4px
+    ),
+    linear-gradient(180deg, #1a1008 0%, #2d1a0e 100%);
+  box-shadow:
+    0 12px 40px hsl(0 0% 0% / 0.6),
+    inset 0 0 30px hsl(0 0% 0% / 0.3);
+}
+
+/* === VELVET INTERIOR === */
+.chest-velvet-interior {
+  position: relative;
+  margin: 8px;
+  padding: 16px 8px;
+  min-height: 200px;
+  border-radius: 8px;
+  background:
+    radial-gradient(ellipse at 50% 0%, hsl(280 30% 15% / 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, hsl(340 30% 12% / 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 60%, hsl(260 25% 10% / 0.3) 0%, transparent 50%),
+    linear-gradient(180deg, hsl(280 20% 8%) 0%, hsl(340 15% 6%) 50%, hsl(260 20% 5%) 100%);
+  box-shadow:
+    inset 0 2px 10px hsl(0 0% 0% / 0.5),
+    inset 0 0 40px hsl(280 30% 10% / 0.2);
+}
+
+/* === EMPTY STATE === */
+.chest-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.chest-empty-keyhole {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, hsl(38 60% 40% / 0.15) 0%, transparent 70%);
+  animation: pulse-glow-amber 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow-amber {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(38 60% 40% / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(38 70% 50% / 0.4);
+  }
+}
+
+/* === WOODEN FLOOR === */
+.chest-floor {
+  height: 6px;
+  background:
     repeating-linear-gradient(
       90deg,
-      transparent 0px,
-      transparent 2px,
-      hsl(0 0% 100% / 0.01) 2px,
-      hsl(0 0% 100% / 0.01) 4px
-    );
-  opacity: 0.5;
+      transparent 0px, transparent 2px,
+      hsl(30 40% 15% / 0.15) 2px, hsl(30 40% 15% / 0.15) 3px
+    ),
+    linear-gradient(180deg, hsl(30 25% 12%) 0%, hsl(30 30% 16%) 50%, hsl(30 25% 10%) 100%);
+  margin: 0 8px 8px;
+  border-radius: 0 0 4px 4px;
 }
 
-.trophy-case-edge {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    hsl(40 60% 50% / 0.3) 20%,
-    hsl(40 60% 70% / 0.5) 50%,
-    hsl(40 60% 50% / 0.3) 80%,
-    transparent 100%
-  );
+/* === MINE A GEM BUTTON (brass plate) === */
+.chest-mine-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  height: auto;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: hsl(30 20% 10%);
+  background: linear-gradient(135deg, hsl(40 60% 45%) 0%, hsl(40 70% 55%) 50%, hsl(40 60% 45%) 100%);
+  border: 1px solid hsl(40 80% 65% / 0.4);
+  box-shadow:
+    0 0 20px hsl(40 60% 45% / 0.3),
+    0 4px 16px hsl(0 0% 0% / 0.5),
+    inset 0 1px 1px hsl(40 80% 75% / 0.3);
+  transition: all 0.3s;
 }
 
-.perspective-container {
-  perspective: 1000px;
+.chest-mine-button:hover {
+  background: linear-gradient(135deg, hsl(40 65% 50%) 0%, hsl(40 75% 60%) 50%, hsl(40 65% 50%) 100%);
+  box-shadow:
+    0 0 30px hsl(40 60% 45% / 0.5),
+    0 6px 24px hsl(0 0% 0% / 0.5),
+    inset 0 1px 1px hsl(40 80% 75% / 0.4);
+  transform: scale(1.03);
 }
 
-.glass-shelf-surface {
-  background: linear-gradient(180deg,
-    hsl(0 0% 100% / 0.03) 0%,
-    hsl(0 0% 100% / 0.01) 100%
-  );
-  border-radius: 0.5rem;
-  backdrop-filter: blur(2px);
-}
-
-.crystal-gem-container {
-  position: relative;
-  animation: float 4s ease-in-out infinite;
-}
-
-.empty-gem-glow {
-  width: 60px;
-  height: 60px;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%);
-  border-radius: 50%;
-  animation: pulse-glow 3s ease-in-out infinite;
-}
-
+/* Legacy enamel pin styles */
 .enamel-pin-gold {
   box-shadow: 
     0 4px 12px rgba(0,0,0,0.4),
