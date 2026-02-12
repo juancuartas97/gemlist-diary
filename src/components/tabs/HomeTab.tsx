@@ -1,4 +1,5 @@
 import { BarChart3, Gem, Loader2 } from 'lucide-react';
+import { ThemeColorPicker } from '@/components/ThemeColorPicker';
 import { GemBadge } from '@/components/GemBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserGems, UserGem } from '@/hooks/useGemData';
@@ -96,6 +97,7 @@ export const HomeTab = () => {
     <div className="space-y-6">
       {/* Greeting Header */}
       <div className="flex items-center gap-4">
+        <div className="flex-1 flex items-center gap-4">
         {avatarUrl ? (
           <img 
             src={avatarUrl} 
@@ -113,6 +115,8 @@ export const HomeTab = () => {
           <p className="text-sm text-muted-foreground">{getGreeting()}</p>
           <h1 className="text-2xl font-bold text-foreground">{firstName}</h1>
         </div>
+        </div>
+        <ThemeColorPicker />
       </div>
 
       {/* Your Vibe Card */}
