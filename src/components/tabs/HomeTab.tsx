@@ -2,10 +2,11 @@ import { BarChart3, Gem, Loader2 } from 'lucide-react';
 import { GemBadge } from '@/components/GemBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserGems, UserGem } from '@/hooks/useGemData';
+import type { GemType } from '@/lib/storage';
 import { useMemo } from 'react';
 
 // Map rarity tier to gem badge type
-const rarityToGemType = (tier: string | null): string => {
+const rarityToGemType = (tier: string | null): GemType => {
   switch (tier) {
     case 'mythic': return 'Ruby';
     case 'legendary': return 'Sapphire';
@@ -172,7 +173,7 @@ export const HomeTab = () => {
                 className="glass-card p-4 rounded-xl"
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <GemBadge type={rarityToGemType(gem.rarity_tier) as any} size="md" />
+                  <GemBadge type={rarityToGemType(gem.rarity_tier)} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground truncate uppercase">
                       {gem.dj?.stage_name || 'Unknown'} @ {gem.venue?.name || 'Unknown'}

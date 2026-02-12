@@ -43,7 +43,7 @@ const Auth = () => {
       if (error) {
         toast.error(error.message);
       }
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to sign in with ' + provider);
     } finally {
       setIsOAuthLoading(null);
