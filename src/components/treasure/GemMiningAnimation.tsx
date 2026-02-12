@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X, ChevronRight, MapPin, Building2, Ticket, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { type RarityResult, RARITY_TIERS, getRarityBreakdown } from '@/hooks/useRarityCalculator';
+import './gemMiningAnimation.css';
 
 interface GemMiningAnimationProps {
   open: boolean;
@@ -23,6 +24,125 @@ interface SlotValue {
   revealed: boolean;
 }
 
+interface AnimationProfile {
+  strikeCount: number;
+  strikeIntervalMs: number;
+  miningMs: number;
+  slotStartGapMs: number;
+  slotSpinMs: number;
+  slotTickMs: number;
+  totalRevealDelayMs: number;
+  revealMs: number;
+  summaryDelayMs: number;
+}
+
+type DebrisType = 'chip' | 'dust' | 'spark';
+
+interface DebrisParticle {
+  id: number;
+  type: DebrisType;
+  rot: number;
+  distance: number;
+  drift: number;
+  life: number;
+}
+
+const getAnimationProfile = (tier?: RarityResult['rarity_tier'] | null, reducedMotion?: boolean): AnimationProfile => {
+  if (reducedMotion) {
+    return {
+      strikeCount: 1,
+      strikeIntervalMs: 180,
+      miningMs: 280,
+      slotStartGapMs: 140,
+      slotSpinMs: 120,
+      slotTickMs: 60,
+      totalRevealDelayMs: 680,
+      revealMs: 220,
+      summaryDelayMs: 220,
+    };
+  }
+
+  if (tier === 'mythic' || tier === 'legendary') {
+    return {
+      strikeCount: 4,
+      strikeIntervalMs: 560,
+      miningMs: 2450,
+      slotStartGapMs: 700,
+      slotSpinMs: 620,
+      slotTickMs: 44,
+      totalRevealDelayMs: 3700,
+      revealMs: 1350,
+      summaryDelayMs: 1500,
+    };
+  }
+
+  if (tier === 'rare') {
+    return {
+      strikeCount: 4,
+      strikeIntervalMs: 500,
+      miningMs: 2100,
+      slotStartGapMs: 620,
+      slotSpinMs: 520,
+      slotTickMs: 48,
+      totalRevealDelayMs: 3200,
+      revealMs: 1000,
+      summaryDelayMs: 1150,
+    };
+  }
+
+  return {
+    strikeCount: 3,
+    strikeIntervalMs: 440,
+    miningMs: 1700,
+    slotStartGapMs: 530,
+    slotSpinMs: 460,
+    slotTickMs: 52,
+    totalRevealDelayMs: 2800,
+    revealMs: 840,
+    summaryDelayMs: 980,
+  };
+};
+
+const buildDebris = (seed: number): DebrisParticle[] => {
+  const rand = (min: number, max: number) => min + ((Math.sin(seed * 97 + min) + 1) / 2) * (max - min);
+  const particles: DebrisParticle[] = [];
+
+  for (let i = 0; i < 7; i += 1) {
+    particles.push({
+      id: i,
+      type: 'chip',
+      rot: rand(8, 172) + i * 18,
+      distance: rand(24, 56),
+      drift: rand(-14, 16),
+      life: rand(680, 980),
+    });
+  }
+
+  for (let i = 7; i < 19; i += 1) {
+    particles.push({
+      id: i,
+      type: 'dust',
+      rot: rand(0, 190) + i * 15,
+      distance: rand(20, 72),
+      drift: rand(-24, 24),
+      life: rand(850, 1300),
+    });
+  }
+
+  for (let i = 19; i < 24; i += 1) {
+    particles.push({
+      id: i,
+      type: 'spark',
+      rot: rand(-20, 180) + i * 10,
+      distance: rand(24, 52),
+      drift: rand(-10, 10),
+      life: rand(260, 520),
+    });
+  }
+
+  return particles;
+};
+
 export const GemMiningAnimation = ({
   open,
   onClose,
@@ -36,137 +156,193 @@ export const GemMiningAnimation = ({
   rarityResult,
 }: GemMiningAnimationProps) => {
   const [phase, setPhase] = useState<'mining' | 'calculating' | 'reveal' | 'summary'>('mining');
-  const [pickaxeSwings, setPickaxeSwings] = useState(0);
-  const [slotValues, setSlotValues] = useState<{
-    venue: SlotValue;
-    city: SlotValue;
-    event: SlotValue;
-    volume: SlotValue;
-  }>({
+  const [swingCount, setSwingCount] = useState(0);
+  const [strikeSeed, setStrikeSeed] = useState(0);
+  const [showImpact, setShowImpact] = useState(false);
+  const [slotValues, setSlotValues] = useState<Record<'venue' | 'city' | 'event' | 'volume', SlotValue>>({
     venue: { current: 0, target: 0, revealed: false },
     city: { current: 0, target: 0, revealed: false },
     event: { current: 0, target: 0, revealed: false },
     volume: { current: 0, target: 0, revealed: false },
   });
   const [totalRevealed, setTotalRevealed] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  const tierInfo = rarityResult ? RARITY_TIERS[rarityResult.rarity_tier] : null;
+  const breakdown = rarityResult ? getRarityBreakdown(rarityResult) : null;
+
+  const profile = useMemo(
+    () => getAnimationProfile(rarityResult?.rarity_tier, prefersReducedMotion),
+    [prefersReducedMotion, rarityResult?.rarity_tier],
+  );
+
+  const debrisParticles = useMemo(() => buildDebris(strikeSeed), [strikeSeed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    sync();
+    mediaQuery.addEventListener('change', sync);
+    return () => mediaQuery.removeEventListener('change', sync);
+  }, []);
 
   useEffect(() => {
     if (!open) {
       setPhase('mining');
-      setPickaxeSwings(0);
+      setSwingCount(0);
+      setStrikeSeed(0);
+      setShowImpact(false);
+      setTotalRevealed(false);
       setSlotValues({
         venue: { current: 0, target: 0, revealed: false },
         city: { current: 0, target: 0, revealed: false },
         event: { current: 0, target: 0, revealed: false },
         volume: { current: 0, target: 0, revealed: false },
       });
-      setTotalRevealed(false);
       return;
     }
 
-    // Start mining animation
-    const swingInterval = setInterval(() => {
-      setPickaxeSwings(prev => {
-        if (prev >= 3) {
-          clearInterval(swingInterval);
-          return prev;
+    const strikeTimer = setInterval(() => {
+      setSwingCount((previous) => {
+        if (previous >= profile.strikeCount) {
+          clearInterval(strikeTimer);
+          return previous;
         }
-        return prev + 1;
-      });
-    }, 400);
 
-    // Transition to calculating if rarity exists, otherwise to reveal
-    const nextPhaseTimeout = setTimeout(() => {
+        setStrikeSeed(Math.floor(Math.random() * 10000));
+        setShowImpact(true);
+        window.setTimeout(() => setShowImpact(false), prefersReducedMotion ? 80 : 220);
+
+        return previous + 1;
+      });
+    }, profile.strikeIntervalMs);
+
+    const phaseTransition = window.setTimeout(() => {
       if (rarityResult) {
         setPhase('calculating');
       } else {
         setPhase('reveal');
       }
-    }, 1600);
+    }, profile.miningMs);
 
     return () => {
-      clearInterval(swingInterval);
-      clearTimeout(nextPhaseTimeout);
+      clearInterval(strikeTimer);
+      window.clearTimeout(phaseTransition);
     };
-  }, [open, rarityResult]);
+  }, [open, profile, rarityResult, prefersReducedMotion]);
 
-  // Calculating phase slot machine animation
   useEffect(() => {
     if (phase !== 'calculating' || !rarityResult) return;
 
-    const breakdown = getRarityBreakdown(rarityResult);
-    
-    // Set target values
-    setSlotValues({
-      venue: { current: 0, target: breakdown.venue.score, revealed: false },
-      city: { current: 0, target: breakdown.city.score, revealed: false },
-      event: { current: 0, target: breakdown.event.score, revealed: false },
-      volume: { current: 0, target: breakdown.volume.score, revealed: false },
-    });
-
-    // Animate slot machines one by one
+    const scoreBreakdown = getRarityBreakdown(rarityResult);
     const categories = ['venue', 'city', 'event', 'volume'] as const;
-    const targets = [breakdown.venue.score, breakdown.city.score, breakdown.event.score, breakdown.volume.score];
-    
-    categories.forEach((cat, index) => {
-      const startDelay = index * 600;
-      const spinDuration = 400;
-      const spinInterval = 50;
-      
-      // Start spinning
-      setTimeout(() => {
-        const spinner = setInterval(() => {
-          setSlotValues(prev => ({
-            ...prev,
-            [cat]: { ...prev[cat], current: Math.floor(Math.random() * 40) },
-          }));
-        }, spinInterval);
+    const maxByCategory = { venue: 40, city: 30, event: 20, volume: 10 };
 
-        // Stop and reveal
-        setTimeout(() => {
-          clearInterval(spinner);
-          setSlotValues(prev => ({
-            ...prev,
-            [cat]: { current: targets[index], target: targets[index], revealed: true },
-          }));
-        }, spinDuration);
-      }, startDelay);
+    setSlotValues({
+      venue: { current: 0, target: scoreBreakdown.venue.score, revealed: false },
+      city: { current: 0, target: scoreBreakdown.city.score, revealed: false },
+      event: { current: 0, target: scoreBreakdown.event.score, revealed: false },
+      volume: { current: 0, target: scoreBreakdown.volume.score, revealed: false },
     });
 
-    // Reveal total after all slots
-    setTimeout(() => {
-      setTotalRevealed(true);
-    }, 2800);
+    const timeoutHandles: number[] = [];
+    const intervalHandles: number[] = [];
 
-    // Transition to reveal phase
-    setTimeout(() => {
-      setPhase('reveal');
-    }, 3800);
+    categories.forEach((category, index) => {
+      const target = scoreBreakdown[category].score;
+      const spinStart = window.setTimeout(() => {
+        const spinner = window.setInterval(() => {
+          setSlotValues((previous) => ({
+            ...previous,
+            [category]: {
+              ...previous[category],
+              current: Math.floor(Math.random() * (maxByCategory[category] + 1)),
+            },
+          }));
+        }, profile.slotTickMs);
 
-    // Transition to summary
-    setTimeout(() => {
-      setPhase('summary');
-    }, 5000);
-  }, [phase, rarityResult]);
+        intervalHandles.push(spinner);
 
-  // Handle non-rarity flow
-  useEffect(() => {
-    if (phase === 'reveal' && !rarityResult) {
-      const summaryTimeout = setTimeout(() => {
+        const stop = window.setTimeout(() => {
+          window.clearInterval(spinner);
+          setSlotValues((previous) => ({
+            ...previous,
+            [category]: { current: target, target, revealed: true },
+          }));
+        }, profile.slotSpinMs);
+
+        timeoutHandles.push(stop);
+      }, index * profile.slotStartGapMs);
+
+      timeoutHandles.push(spinStart);
+    });
+
+    timeoutHandles.push(
+      window.setTimeout(() => {
+        setTotalRevealed(true);
+      }, profile.totalRevealDelayMs),
+    );
+
+    timeoutHandles.push(
+      window.setTimeout(() => {
+        setPhase('reveal');
+      }, profile.totalRevealDelayMs + 620),
+    );
+
+    timeoutHandles.push(
+      window.setTimeout(() => {
         setPhase('summary');
-      }, 1200);
-      return () => clearTimeout(summaryTimeout);
-    }
-  }, [phase, rarityResult]);
+      }, profile.totalRevealDelayMs + 620 + profile.revealMs + profile.summaryDelayMs),
+    );
+
+    return () => {
+      timeoutHandles.forEach((handle) => window.clearTimeout(handle));
+      intervalHandles.forEach((handle) => window.clearInterval(handle));
+    };
+  }, [phase, profile, rarityResult]);
+
+  useEffect(() => {
+    if (phase !== 'reveal' || rarityResult) return;
+
+    const toSummary = window.setTimeout(() => {
+      setPhase('summary');
+    }, profile.revealMs + profile.summaryDelayMs);
+
+    return () => window.clearTimeout(toSummary);
+  }, [phase, profile, rarityResult]);
 
   if (!open) return null;
 
-  const tierInfo = rarityResult ? RARITY_TIERS[rarityResult.rarity_tier] : null;
-  const breakdown = rarityResult ? getRarityBreakdown(rarityResult) : null;
+  const renderDebris = () => (
+    <div className="debris-layer">
+      {debrisParticles.map((particle) => (
+        <div
+          key={`${particle.id}-${strikeSeed}`}
+          className="debris"
+          style={{
+            ['--rot' as string]: `${particle.rot}deg`,
+            ['--distance' as string]: `${particle.distance}px`,
+            ['--drift' as string]: `${particle.drift}px`,
+            ['--life' as string]: `${particle.life}ms`,
+          }}
+        >
+          <div
+            className={cn({
+              'debris-chip': particle.type === 'chip',
+              'debris-dust': particle.type === 'dust',
+              'debris-spark': particle.type === 'spark',
+            })}
+          />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
-      {/* Close button */}
+    <div className="gem-mining-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
       <button
         onClick={onClose}
         className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
@@ -175,202 +351,96 @@ export const GemMiningAnimation = ({
       </button>
 
       <div className="flex flex-col items-center justify-center px-4 sm:px-6 w-full max-w-md text-center overflow-y-auto max-h-[90vh] py-8">
-        {/* Mining Phase */}
         {phase === 'mining' && (
           <div className="animate-fade-in">
-            {/* Rock and Pickaxe */}
-            <div className="relative w-48 h-48 mb-8">
-              {/* Rock */}
-              <svg
-                viewBox="0 0 100 100"
-                className="w-full h-full"
-              >
-                {/* Rock body */}
+            <div className="mining-scene mb-8">
+              <svg viewBox="0 0 100 100" className={cn('w-full h-full rock-shell', showImpact && 'rock-shell-impact')}>
                 <polygon
                   points="15,70 25,40 45,25 65,30 85,55 80,75 60,85 30,80"
                   fill="hsl(var(--muted))"
-                  stroke="hsl(var(--muted-foreground) / 0.3)"
+                  stroke="hsl(var(--muted-foreground) / 0.35)"
                   strokeWidth="1"
                 />
-                {/* Rock facets */}
-                <polygon
-                  points="25,40 45,25 50,50 30,55"
-                  fill="hsl(var(--muted-foreground) / 0.2)"
-                />
-                <polygon
-                  points="65,30 85,55 70,60 55,45"
-                  fill="hsl(var(--muted-foreground) / 0.1)"
-                />
-                {/* Cracks */}
+                <polygon points="25,40 45,25 50,50 30,55" fill="hsl(var(--muted-foreground) / 0.2)" />
+                <polygon points="65,30 85,55 70,60 55,45" fill="hsl(var(--muted-foreground) / 0.1)" />
                 <path
                   d="M40,55 L50,60 L45,70 M60,50 L55,65"
-                  stroke="hsl(var(--muted-foreground) / 0.4)"
+                  stroke="hsl(var(--muted-foreground) / 0.5)"
                   strokeWidth="1"
                   fill="none"
                 />
-                {/* Sparkles/hints of gem inside */}
-                <circle cx="48" cy="52" r="2" fill={gemColor} opacity="0.6" />
-                <circle cx="55" cy="58" r="1.5" fill={gemColor} opacity="0.4" />
+                <circle cx="48" cy="52" r="2" fill={gemColor} opacity="0.7" />
+                <circle cx="55" cy="58" r="1.3" fill={gemColor} opacity="0.45" />
               </svg>
 
-              {/* Pickaxe */}
               <svg
+                key={swingCount}
                 viewBox="0 0 60 60"
-                className={cn(
-                  "absolute w-28 h-28 -right-6 -top-4 origin-bottom-left transition-transform duration-200",
-                  pickaxeSwings % 2 === 1 ? "rotate-[-25deg]" : "rotate-[15deg]"
-                )}
+                className={cn('pickaxe', swingCount > 0 && 'pickaxe-strike')}
+                style={{ ['--strike-duration' as string]: `${profile.strikeIntervalMs * 0.75}ms` }}
               >
-                {/* Handle */}
-                <line
-                  x1="10" y1="50"
-                  x2="45" y2="15"
-                  stroke="#8B4513"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                />
-                {/* Pick head */}
-                <path
-                  d="M42,18 L55,8 L52,12 L55,15 L48,22 L42,18"
-                  fill="#4A5568"
-                  stroke="#2D3748"
-                  strokeWidth="1"
-                />
-                {/* Pick back */}
-                <path
-                  d="M40,20 L35,25 L38,28 L42,22"
-                  fill="#4A5568"
-                  stroke="#2D3748"
-                  strokeWidth="1"
-                />
+                <line x1="10" y1="50" x2="45" y2="15" stroke="#8B4513" strokeWidth="4" strokeLinecap="round" />
+                <path d="M42,18 L55,8 L52,12 L55,15 L48,22 L42,18" fill="#4A5568" stroke="#2D3748" strokeWidth="1" />
+                <path d="M40,20 L35,25 L38,28 L42,22" fill="#4A5568" stroke="#2D3748" strokeWidth="1" />
               </svg>
 
-              {/* Sparks on impact */}
-              {pickaxeSwings > 0 && (
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                  {[...Array(4)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-1 h-1 bg-yellow-400 rounded-full animate-ping"
-                      style={{
-                        left: `${Math.cos(i * 1.5) * 20}px`,
-                        top: `${Math.sin(i * 1.5) * 20}px`,
-                        animationDelay: `${i * 0.1}s`,
-                      }}
-                    />
-                  ))}
-                </div>
+              {showImpact && (
+                <>
+                  <div className="impact-flash" />
+                  {renderDebris()}
+                </>
               )}
             </div>
 
-            <p className="text-lg text-muted-foreground animate-pulse">
-              Mining...
+            <p className="text-lg text-muted-foreground">
+              Fracturing stone matrix...
             </p>
           </div>
         )}
 
-        {/* Calculating Phase - Slot Machine */}
         {phase === 'calculating' && breakdown && (
           <div className="animate-fade-in w-full">
-            <h2 className="text-xl font-bold text-foreground mb-6">
-              Calculating Rarity...
-            </h2>
+            <h2 className="text-xl font-bold text-foreground mb-6">Calculating Scarcity Signal...</h2>
 
             <div className="space-y-3 mb-6">
-              {/* Venue Scarcity */}
-              <div className={cn(
-                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
-                slotValues.venue.revealed 
-                  ? "bg-primary/10 border border-primary/30" 
-                  : "bg-muted/30 border border-muted/20"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Venue</span>
+              {[
+                { icon: Building2, label: 'Venue', key: 'venue', max: 40 },
+                { icon: MapPin, label: 'City', key: 'city', max: 30 },
+                { icon: Ticket, label: 'Event', key: 'event', max: 20 },
+                { icon: Globe, label: 'Tour', key: 'volume', max: 10 },
+              ].map(({ icon: Icon, label, key, max }) => (
+                <div
+                  key={key}
+                  className={cn(
+                    'flex items-center justify-between p-3 rounded-lg transition-all duration-300',
+                    slotValues[key as keyof typeof slotValues].revealed
+                      ? 'bg-primary/10 border border-primary/30'
+                      : 'bg-muted/30 border border-muted/20',
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'font-mono text-lg font-bold transition-all',
+                        slotValues[key as keyof typeof slotValues].revealed ? 'text-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      {slotValues[key as keyof typeof slotValues].current}
+                    </span>
+                    <span className="text-xs text-muted-foreground">/{max}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "font-mono text-lg font-bold transition-all",
-                    slotValues.venue.revealed ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {slotValues.venue.current}
-                  </span>
-                  <span className="text-xs text-muted-foreground">/40</span>
-                </div>
-              </div>
-
-              {/* City Frequency */}
-              <div className={cn(
-                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
-                slotValues.city.revealed 
-                  ? "bg-primary/10 border border-primary/30" 
-                  : "bg-muted/30 border border-muted/20"
-              )}>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">City</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "font-mono text-lg font-bold transition-all",
-                    slotValues.city.revealed ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {slotValues.city.current}
-                  </span>
-                  <span className="text-xs text-muted-foreground">/30</span>
-                </div>
-              </div>
-
-              {/* Event History */}
-              <div className={cn(
-                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
-                slotValues.event.revealed 
-                  ? "bg-primary/10 border border-primary/30" 
-                  : "bg-muted/30 border border-muted/20"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Ticket className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Event</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "font-mono text-lg font-bold transition-all",
-                    slotValues.event.revealed ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {slotValues.event.current}
-                  </span>
-                  <span className="text-xs text-muted-foreground">/20</span>
-                </div>
-              </div>
-
-              {/* Yearly Volume */}
-              <div className={cn(
-                "flex items-center justify-between p-3 rounded-lg transition-all duration-300",
-                slotValues.volume.revealed 
-                  ? "bg-primary/10 border border-primary/30" 
-                  : "bg-muted/30 border border-muted/20"
-              )}>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Tour</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "font-mono text-lg font-bold transition-all",
-                    slotValues.volume.revealed ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {slotValues.volume.current}
-                  </span>
-                  <span className="text-xs text-muted-foreground">/10</span>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* Total Score */}
             {totalRevealed && rarityResult && tierInfo && (
-              <div 
-                className="p-4 rounded-xl border-2 animate-scale-in"
-                style={{ 
+              <div
+                className="p-4 rounded-xl border-2 rarity-total-pop"
+                style={{
                   borderColor: tierInfo.color,
                   background: `${tierInfo.color}15`,
                 }}
@@ -391,77 +461,39 @@ export const GemMiningAnimation = ({
           </div>
         )}
 
-        {/* Reveal Phase */}
         {phase === 'reveal' && (
           <div className="animate-scale-in">
-            {/* Gem emerging with glow */}
-            <div className="relative w-48 h-48 mb-8">
-              {/* Glow effect */}
+            <div className="relative reveal-gem-wrap mb-8">
               <div
-                className="absolute inset-0 rounded-full animate-pulse"
+                className="reveal-core-glow"
                 style={{
-                  background: `radial-gradient(circle, ${tierInfo?.color || gemColor}60 0%, transparent 70%)`,
+                  background: `radial-gradient(circle, ${tierInfo?.color || gemColor}75 0%, transparent 65%)`,
+                  ['--glow-duration' as string]: `${profile.revealMs + 900}ms`,
                 }}
               />
-              
-              {/* Particles */}
-              {[...Array(12)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute left-1/2 top-1/2 w-2 h-2 rounded-full"
-                  style={{
-                    background: tierInfo?.color || gemColor,
-                    boxShadow: `0 0 10px ${tierInfo?.color || gemColor}`,
-                    animation: `float-out 1.5s ease-out forwards`,
-                    animationDelay: `${i * 0.05}s`,
-                    transform: `translate(-50%, -50%) rotate(${i * 30}deg) translateY(-20px)`,
-                  }}
-                />
-              ))}
+              <div className="reveal-caustics" />
 
-              {/* Main Gem */}
-              <svg
-                viewBox="0 0 100 100"
-                className="w-full h-full animate-float"
-              >
+              <svg viewBox="0 0 100 100" className="w-full h-full relative z-10">
                 <defs>
                   <linearGradient id="gemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={`${tierInfo?.color || gemColor}CC`} />
-                    <stop offset="50%" stopColor={tierInfo?.color || gemColor} />
-                    <stop offset="100%" stopColor={`${tierInfo?.color || gemColor}99`} />
+                    <stop offset="0%" stopColor={`${tierInfo?.color || gemColor}E5`} />
+                    <stop offset="42%" stopColor={tierInfo?.color || gemColor} />
+                    <stop offset="100%" stopColor={`${tierInfo?.color || gemColor}80`} />
                   </linearGradient>
-                  <filter id="gemGlow">
-                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
+                  <radialGradient id="specularHighlight" cx="30%" cy="24%" r="65%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
+                    <stop offset="35%" stopColor="rgba(255,255,255,0.14)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                  </radialGradient>
                 </defs>
-                
-                {/* Diamond shape */}
-                <path
-                  d="M50 10 L15 40 L50 90 L85 40 Z"
-                  fill="url(#gemGradient)"
-                  stroke={tierInfo?.color || gemColor}
-                  strokeWidth="1"
-                  filter="url(#gemGlow)"
-                />
-                {/* Top facet */}
-                <path
-                  d="M50 10 L15 40 L85 40 Z"
-                  fill="rgba(255,255,255,0.25)"
-                />
-                {/* Left facet */}
-                <path
-                  d="M15 40 L50 40 L50 90 Z"
-                  fill="rgba(0,0,0,0.1)"
-                />
-                {/* Center highlight */}
-                <path
-                  d="M50 25 L35 40 L50 70 L65 40 Z"
-                  fill="rgba(255,255,255,0.15)"
-                />
+
+                <path d="M50 10 L15 40 L50 90 L85 40 Z" fill="url(#gemGradient)" stroke={tierInfo?.color || gemColor} strokeWidth="1.4" />
+                <path d="M50 10 L15 40 L85 40 Z" fill="rgba(255,255,255,0.2)" />
+                <path d="M15 40 L50 40 L50 90 Z" fill="rgba(0,0,0,0.15)" />
+                <path d="M85 40 L50 40 L50 90 Z" fill="rgba(255,255,255,0.06)" />
+                <path d="M50 22 L33 40 L50 73 L68 40 Z" fill="url(#specularHighlight)" />
+                <path d="M50 10 L27 36 L36 38 Z" fill="rgba(255,255,255,0.4)" />
+                <path d="M73 36 L50 10 L64 38 Z" fill="rgba(255,255,255,0.32)" />
               </svg>
             </div>
 
@@ -474,60 +506,33 @@ export const GemMiningAnimation = ({
                   </span>
                 </div>
               )}
-              <p className="text-lg text-foreground">
-                Gem Discovered!
-              </p>
+              <p className="text-lg text-foreground">Gem Crystalized</p>
             </div>
           </div>
         )}
 
-        {/* Summary Phase */}
         {phase === 'summary' && (
           <div className="animate-fade-in space-y-6 w-full">
-            {/* Gem with info */}
             <div className="relative">
-              <svg
-                viewBox="0 0 100 100"
-                className="w-32 h-32 mx-auto"
-              >
+              <svg viewBox="0 0 100 100" className="w-32 h-32 mx-auto">
                 <defs>
                   <linearGradient id="summaryGemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor={`${tierInfo?.color || gemColor}CC`} />
                     <stop offset="50%" stopColor={tierInfo?.color || gemColor} />
                     <stop offset="100%" stopColor={`${tierInfo?.color || gemColor}99`} />
                   </linearGradient>
-                  <filter id="summaryGemGlow">
-                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
                 </defs>
-                
-                <path
-                  d="M50 10 L15 40 L50 90 L85 40 Z"
-                  fill="url(#summaryGemGradient)"
-                  stroke={tierInfo?.color || gemColor}
-                  strokeWidth="1"
-                  filter="url(#summaryGemGlow)"
-                />
-                <path
-                  d="M50 10 L15 40 L85 40 Z"
-                  fill="rgba(255,255,255,0.25)"
-                />
-                <path
-                  d="M15 40 L50 40 L50 90 Z"
-                  fill="rgba(0,0,0,0.1)"
-                />
+
+                <path d="M50 10 L15 40 L50 90 L85 40 Z" fill="url(#summaryGemGradient)" stroke={tierInfo?.color || gemColor} strokeWidth="1" />
+                <path d="M50 10 L15 40 L85 40 Z" fill="rgba(255,255,255,0.25)" />
+                <path d="M15 40 L50 40 L50 90 Z" fill="rgba(0,0,0,0.1)" />
               </svg>
             </div>
 
-            {/* Rarity Badge */}
             {tierInfo && rarityResult && (
-              <div 
+              <div
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full mx-auto"
-                style={{ 
+                style={{
                   background: `${tierInfo.color}20`,
                   border: `1px solid ${tierInfo.color}40`,
                 }}
@@ -536,30 +541,15 @@ export const GemMiningAnimation = ({
                 <span className="font-bold" style={{ color: tierInfo.color }}>
                   {tierInfo.label}
                 </span>
-                <span className="text-sm text-muted-foreground">
-                  ({rarityResult.total_score}/100)
-                </span>
+                <span className="text-sm text-muted-foreground">({rarityResult.total_score}/100)</span>
               </div>
             )}
 
-            {/* Artist and Event Info */}
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground">
-                {artistName}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {genreName} Gem
-              </p>
-              {eventName && (
-                <p className="text-sm text-muted-foreground">
-                  {eventName}
-                </p>
-              )}
-              {venueName && (
-                <p className="text-sm text-muted-foreground/80">
-                  @ {venueName}
-                </p>
-              )}
+              <h2 className="text-2xl font-bold text-foreground">{artistName}</h2>
+              <p className="text-sm text-muted-foreground">{genreName} Gem</p>
+              {eventName && <p className="text-sm text-muted-foreground">{eventName}</p>}
+              {venueName && <p className="text-sm text-muted-foreground/80">@ {venueName}</p>}
               <p className="text-xs text-muted-foreground/70">
                 {new Date(eventDate).toLocaleDateString('en-US', {
                   weekday: 'long',
@@ -570,7 +560,6 @@ export const GemMiningAnimation = ({
               </p>
             </div>
 
-            {/* Rarity Breakdown */}
             {breakdown && (
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2 rounded bg-muted/20">
@@ -592,54 +581,18 @@ export const GemMiningAnimation = ({
               </div>
             )}
 
-            {/* Action Buttons */}
             <div className="flex flex-col gap-3 w-full max-w-xs mx-auto pt-4">
-              <Button
-                onClick={onContinue}
-                variant="neon"
-                className="w-full gap-2"
-              >
+              <Button onClick={onContinue} variant="neon" className="w-full gap-2">
                 Mine Another Gem
                 <ChevronRight className="w-4 h-4" />
               </Button>
-              <Button
-                onClick={onClose}
-                variant="ghost"
-                className="w-full"
-              >
+              <Button onClick={onClose} variant="ghost" className="w-full">
                 Done
               </Button>
             </div>
           </div>
         )}
       </div>
-
-      {/* CSS for custom animations */}
-      <style>{`
-        @keyframes float-out {
-          0% {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0) translateY(-60px);
-          }
-        }
-        
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-        
-        .animate-float {
-          animation: float 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };
