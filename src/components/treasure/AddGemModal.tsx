@@ -288,8 +288,8 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded, mode = 'memory' }:
       } else {
         setVerificationError(result.reason || 'Location verification failed');
       }
-    } catch (err: any) {
-      setVerificationError(err.message || 'Failed to get location');
+    } catch (err: unknown) {
+      setVerificationError(err instanceof Error ? err.message : 'Failed to get location');
     }
     
     setVerifyingLocation(false);
