@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pickaxe, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react';
+import { Pickaxe, SlidersHorizontal, ArrowUpDown, X, KeyRound, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
 import { useAuth } from '@/hooks/useAuth';
@@ -78,6 +78,7 @@ export const TreasureChestTab = () => {
     setFilterArtist(null);
     setFilterVenue(null);
   };
+
   // Build unified shelf items from filtered gems
   const shelfItems = useMemo((): ShelfItem[] => {
     const groupedByDJ = groupGemsByDJ(filteredGems);
@@ -91,7 +92,6 @@ export const TreasureChestTab = () => {
       }
     });
     
-    // Sort items
     items.sort((a, b) => {
       const gemA = a.type === 'single' ? a.gem : a.gems[0];
       const gemB = b.type === 'single' ? b.gem : b.gems[0];
@@ -103,7 +103,6 @@ export const TreasureChestTab = () => {
       if (sortBy === 'rarity') {
         return dir * ((gemA.rarity_score || 0) - (gemB.rarity_score || 0));
       }
-      // date (default)
       const dateA = a.type === 'single' 
         ? new Date(a.gem.event_date) 
         : new Date(Math.max(...a.gems.map(g => new Date(g.event_date).getTime())));
@@ -116,7 +115,6 @@ export const TreasureChestTab = () => {
     return items;
   }, [filteredGems, sortBy, sortDir]);
 
-  // Split items into shelves (3 items per shelf)
   const shelves = useMemo(() => {
     const result: ShelfItem[][] = [];
     for (let i = 0; i < shelfItems.length; i += 3) {
@@ -125,39 +123,13 @@ export const TreasureChestTab = () => {
     return result;
   }, [shelfItems]);
 
-  const handleGemAdded = () => {
-    refetch();
-  };
-
-  const handleGemClick = (gem: UserGem) => {
-    setSelectedGem(gem);
-    setShowDetailModal(true);
-  };
-
-  const handleClusterClick = (clusterGems: UserGem[]) => {
-    setSelectedCluster(clusterGems);
-    setShowClusterModal(true);
-  };
-
-  const handleClusterGemClick = (gem: UserGem) => {
-    setShowClusterModal(false);
-    setSelectedGem(gem);
-    setShowDetailModal(true);
-  };
-
-  const handleGemDeleted = () => {
-    setSelectedGem(null);
-    refetch();
-  };
-
-  const handleGemUpdated = () => {
-    refetch();
-  };
-
-  const handleRemoveTargetEvent = (goalId: string) => {
-    if (!user?.id) return;
-    deleteGoal.mutate({ goalId, userId: user.id });
-  };
+  const handleGemAdded = () => { refetch(); };
+  const handleGemClick = (gem: UserGem) => { setSelectedGem(gem); setShowDetailModal(true); };
+  const handleClusterClick = (clusterGems: UserGem[]) => { setSelectedCluster(clusterGems); setShowClusterModal(true); };
+  const handleClusterGemClick = (gem: UserGem) => { setShowClusterModal(false); setSelectedGem(gem); setShowDetailModal(true); };
+  const handleGemDeleted = () => { setSelectedGem(null); refetch(); };
+  const handleGemUpdated = () => { refetch(); };
+  const handleRemoveTargetEvent = (goalId: string) => { if (!user?.id) return; deleteGoal.mutate({ goalId, userId: user.id }); };
 
   return (
     <div className="treasure-chest min-h-screen relative overflow-hidden">
@@ -167,242 +139,224 @@ export const TreasureChestTab = () => {
       
       {/* Content */}
       <div className="relative z-10 pb-32">
-        {/* Header */}
-        <div className="pt-4 pb-6 px-4 text-center">
-          <h1 className="text-2xl font-bold text-foreground/90 tracking-wide">Treasure Chest</h1>
-          <p className="text-xs text-muted-foreground/60 mt-1 tracking-widest uppercase">Your Collection</p>
+        {/* ===== THE CHEST ===== */}
+        <div className="mx-2 mt-2">
           
-          {/* Filter & Sort Controls */}
-          <div className="flex items-center justify-center gap-2 mt-3">
+          {/* === A. THE LID === */}
+          <div className="chest-lid">
+            <div className="chest-lid-texture" />
+            
+            {/* Corner brackets on lid */}
+            <div className="chest-corner-bracket chest-corner-tl" />
+            <div className="chest-corner-bracket chest-corner-tr" />
+            
+            {/* Festival pins inside the lid */}
+            <div 
+              className="relative z-10 flex items-start gap-6 py-6 px-5 overflow-x-auto scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {festivalBadges.map((badge, i) => (
+                <EnamelPin key={i} badge={badge} />
+              ))}
+            </div>
+            
+            <div className="chest-lid-edge" />
+          </div>
+
+          {/* === B. HINGE STRIP === */}
+          <div className="chest-hinge">
+            <div className="chest-hinge-bolt chest-hinge-bolt-left" />
+            <div className="chest-hinge-bolt chest-hinge-bolt-right" />
+          </div>
+
+          {/* === C. LOCK & KEY STRIP === */}
+          <div className="chest-lock-strip">
+            {/* Filter button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                hasActiveFilters 
-                  ? 'bg-primary/20 text-primary border border-primary/30' 
-                  : 'bg-muted/20 text-muted-foreground border border-border/30 hover:bg-muted/30'
-              }`}
+              className={`chest-hardware-btn ${hasActiveFilters ? 'active' : ''}`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Filter
-              {hasActiveFilters && (
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              )}
+              {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
             </button>
             
+            {/* Lock icon (center) */}
+            <div className="chest-lock-icon">
+              <Lock className="w-4 h-4" />
+              <div className="chest-keyhole" />
+            </div>
+            
+            {/* Sort button */}
             <button
               onClick={() => {
                 const cycle: ('date' | 'artist' | 'rarity')[] = ['date', 'artist', 'rarity'];
                 const idx = cycle.indexOf(sortBy);
                 setSortBy(cycle[(idx + 1) % cycle.length]);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-muted/20 text-muted-foreground border border-border/30 hover:bg-muted/30 transition-all"
+              className="chest-hardware-btn"
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
               {sortBy === 'date' ? 'Date' : sortBy === 'artist' ? 'Artist' : 'Rarity'}
             </button>
             
+            {/* Sort direction */}
             <button
               onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
-              className="px-2 py-1.5 rounded-full text-xs font-medium bg-muted/20 text-muted-foreground border border-border/30 hover:bg-muted/30 transition-all"
+              className="chest-hardware-btn small"
             >
               {sortDir === 'desc' ? '↓' : '↑'}
             </button>
           </div>
-        </div>
 
-        {/* Filter Panel */}
-        {showFilters && (
-          <div className="mx-4 mb-4 glass-card p-4 rounded-xl space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Filters</span>
-              {hasActiveFilters && (
-                <button onClick={clearFilters} className="text-xs text-primary flex items-center gap-1">
-                  <X className="w-3 h-3" /> Clear all
-                </button>
-              )}
-            </div>
-            
-            {/* Genre filter */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Genre</label>
-              <div className="flex flex-wrap gap-1.5">
-                {filterOptions.genres.map(g => (
-                  <button
-                    key={g}
-                    onClick={() => setFilterGenre(filterGenre === g ? null : g)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                      filterGenre === g 
-                        ? 'bg-primary/30 text-primary border border-primary/40' 
-                        : 'bg-muted/20 text-muted-foreground border border-border/20 hover:bg-muted/30'
-                    }`}
-                  >
-                    {g}
+          {/* Filter Panel */}
+          {showFilters && (
+            <div className="chest-filter-panel">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-amber-200/80">Filters</span>
+                {hasActiveFilters && (
+                  <button onClick={clearFilters} className="text-xs text-amber-400 flex items-center gap-1">
+                    <X className="w-3 h-3" /> Clear all
                   </button>
-                ))}
+                )}
               </div>
-            </div>
-            
-            {/* Artist filter */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Artist</label>
-              <div className="flex flex-wrap gap-1.5">
-                {filterOptions.artists.map(a => (
-                  <button
-                    key={a}
-                    onClick={() => setFilterArtist(filterArtist === a ? null : a)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                      filterArtist === a 
-                        ? 'bg-primary/30 text-primary border border-primary/40' 
-                        : 'bg-muted/20 text-muted-foreground border border-border/20 hover:bg-muted/30'
-                    }`}
-                  >
-                    {a}
-                  </button>
-                ))}
+              
+              {/* Genre filter */}
+              <div className="mb-2">
+                <label className="text-xs text-amber-200/40 mb-1 block">Genre</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {filterOptions.genres.map(g => (
+                    <button
+                      key={g}
+                      onClick={() => setFilterGenre(filterGenre === g ? null : g)}
+                      className={`chest-filter-chip ${filterGenre === g ? 'active' : ''}`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            
-            {/* Venue filter */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Venue</label>
-              <div className="flex flex-wrap gap-1.5">
-                {filterOptions.venues.map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setFilterVenue(filterVenue === v ? null : v)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${
-                      filterVenue === v 
-                        ? 'bg-primary/30 text-primary border border-primary/40' 
-                        : 'bg-muted/20 text-muted-foreground border border-border/20 hover:bg-muted/30'
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
+              
+              {/* Artist filter */}
+              <div className="mb-2">
+                <label className="text-xs text-amber-200/40 mb-1 block">Artist</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {filterOptions.artists.map(a => (
+                    <button
+                      key={a}
+                      onClick={() => setFilterArtist(filterArtist === a ? null : a)}
+                      className={`chest-filter-chip ${filterArtist === a ? 'active' : ''}`}
+                    >
+                      {a}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* The Lid - Trophy Case with Festival Badges */}
-        <div className="trophy-lid mx-4 mb-8">
-          {/* Brushed metal texture overlay */}
-          <div className="trophy-lid-texture" />
-          
-          {/* Horizontal scrollable row of pins */}
-          <div 
-            className="relative z-10 flex items-start gap-6 py-8 px-6 overflow-x-auto scrollbar-hide"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {festivalBadges.map((badge, i) => (
-              <EnamelPin 
-                key={i} 
-                badge={badge} 
-              />
-            ))}
-          </div>
-          
-          {/* Bottom edge with gold accent */}
-          <div className="trophy-lid-edge" />
-        </div>
-
-        {/* Ghost Gems - Target Events */}
-        {targetEvents && targetEvents.length > 0 && (
-          <div className="mx-4 mb-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Target Quests
-            </h3>
-            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-              {targetEvents.map((goal) => (
-                <GhostGem 
-                  key={goal.id} 
-                  goal={goal} 
-                  size="sm"
-                  onRemove={handleRemoveTargetEvent}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-        {/* The Shelves - Glass Archive */}
-        <div className="glass-archive perspective-container px-4">
-          {loading ? (
-            <div className="empty-vault text-center py-16">
-              <div className="empty-gem-glow mx-auto mb-4 animate-pulse" />
-              <p className="text-muted-foreground/60 text-sm">Loading your gems...</p>
-            </div>
-          ) : gems.length === 0 ? (
-            <div className="empty-vault text-center py-16">
-              <div className="empty-gem-glow mx-auto mb-4" />
-              <p className="text-muted-foreground/60 text-sm">Your vault awaits...</p>
-              <p className="text-muted-foreground/40 text-xs mt-1">Mine your first gem</p>
-            </div>
-          ) : (
-            <div className="shelves-container space-y-8">
-              {shelves.map((shelfItems, index) => (
-                <GlassShelf 
-                  key={index}
-                  depth={index}
-                  items={shelfItems}
-                  onGemClick={handleGemClick}
-                  onClusterClick={handleClusterClick}
-                />
-              ))}
+              
+              {/* Venue filter */}
+              <div>
+                <label className="text-xs text-amber-200/40 mb-1 block">Venue</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {filterOptions.venues.map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setFilterVenue(filterVenue === v ? null : v)}
+                      className={`chest-filter-chip ${filterVenue === v ? 'active' : ''}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Mine a Gem Button - Inside frame */}
-      <div className="sticky bottom-20 left-0 right-0 flex justify-center pb-4 z-50">
-        <Button
-          onClick={() => setShowModeChooser(true)}
-          className="px-6 py-3 h-auto rounded-full shadow-2xl bg-primary/90 hover:bg-primary border border-primary-foreground/20 gap-2"
-          style={{
-            boxShadow: '0 0 30px hsl(var(--gem-emerald) / 0.4), 0 8px 32px rgba(0,0,0,0.5)'
-          }}
-        >
-          <Pickaxe className="w-5 h-5" />
-          <span className="font-semibold">Mine a Gem</span>
-        </Button>
+          {/* === D. THE BODY (velvet interior) === */}
+          <div className="chest-body">
+            {/* Corner brackets */}
+            <div className="chest-corner-bracket chest-corner-bl" />
+            <div className="chest-corner-bracket chest-corner-br" />
+            
+            {/* Velvet interior */}
+            <div className="chest-velvet-interior">
+              {/* Ghost Gems - Target Events */}
+              {targetEvents && targetEvents.length > 0 && (
+                <div className="mb-6 px-2">
+                  <h3 className="text-sm font-medium text-amber-200/60 mb-3 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    Target Quests
+                  </h3>
+                  <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+                    {targetEvents.map((goal) => (
+                      <GhostGem key={goal.id} goal={goal} size="sm" onRemove={handleRemoveTargetEvent} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Gem shelves */}
+              <div className="perspective-container">
+                {loading ? (
+                  <div className="text-center py-16">
+                    <div className="empty-gem-glow mx-auto mb-4 animate-pulse" />
+                    <p className="text-amber-200/40 text-sm">Loading your gems...</p>
+                  </div>
+                ) : gems.length === 0 ? (
+                  <div className="chest-empty-state">
+                    <div className="chest-empty-keyhole">
+                      <KeyRound className="w-8 h-8 text-amber-400/50" />
+                    </div>
+                    <p className="text-amber-200/50 text-sm mt-4">Your chest awaits its first gem...</p>
+                    <p className="text-amber-200/30 text-xs mt-1">Tap the pickaxe to start mining</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6 px-1">
+                    {shelves.map((shelfItems, index) => (
+                      <GlassShelf 
+                        key={index}
+                        depth={index}
+                        items={shelfItems}
+                        onGemClick={handleGemClick}
+                        onClusterClick={handleClusterClick}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Wooden floor */}
+            <div className="chest-floor" />
+          </div>
+        </div>
+
+        {/* Mine a Gem Button - Brass plate */}
+        <div className="flex justify-center mt-6 pb-4">
+          <Button
+            onClick={() => setShowModeChooser(true)}
+            className="chest-mine-button"
+          >
+            <Pickaxe className="w-5 h-5" />
+            <span className="font-semibold">Mine a Gem</span>
+          </Button>
+        </div>
       </div>
 
       {/* Collection Mode Chooser */}
       <CollectionModeChooser
         open={showModeChooser}
-        onSelect={(mode) => {
-          setCollectionMode(mode);
-          setShowModeChooser(false);
-          setShowAddModal(true);
-        }}
+        onSelect={(mode) => { setCollectionMode(mode); setShowModeChooser(false); setShowAddModal(true); }}
         onClose={() => setShowModeChooser(false)}
       />
 
       {/* Add Gem Modal */}
-      <AddGemModal 
-        open={showAddModal} 
-        onOpenChange={setShowAddModal}
-        onGemAdded={handleGemAdded}
-        mode={collectionMode}
-      />
+      <AddGemModal open={showAddModal} onOpenChange={setShowAddModal} onGemAdded={handleGemAdded} mode={collectionMode} />
 
       {/* Cluster View Modal */}
-      <ClusterViewModal
-        gems={selectedCluster}
-        open={showClusterModal}
-        onOpenChange={setShowClusterModal}
-        onGemClick={handleClusterGemClick}
-      />
+      <ClusterViewModal gems={selectedCluster} open={showClusterModal} onOpenChange={setShowClusterModal} onGemClick={handleClusterGemClick} />
 
       {/* Gem Detail Modal */}
-      <GemDetailModal
-        gem={selectedGem}
-        open={showDetailModal}
-        onOpenChange={setShowDetailModal}
-        onGemDeleted={handleGemDeleted}
-        onGemUpdated={handleGemUpdated}
-      />
+      <GemDetailModal gem={selectedGem} open={showDetailModal} onOpenChange={setShowDetailModal} onGemDeleted={handleGemDeleted} onGemUpdated={handleGemUpdated} />
     </div>
   );
 };
