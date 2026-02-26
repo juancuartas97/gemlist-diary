@@ -1,7 +1,7 @@
-import { MapPin, Clock, BookOpen, Sparkles, Navigation } from 'lucide-react';
+import { MapPin, Clock, BookOpen, Sparkles, Navigation, ListMusic, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type CollectionMode = 'memory' | 'live';
+export type CollectionMode = 'memory' | 'live' | 'festival';
 
 interface CollectionModeChooserProps {
   open: boolean;
@@ -92,6 +92,44 @@ export const CollectionModeChooser = ({ open, onSelect, onClose }: CollectionMod
                 <span className="flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Verified DNA
+                </span>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {/* Log a Festival */}
+        <button
+          onClick={() => onSelect('festival')}
+          className={cn(
+            "w-full p-5 rounded-2xl text-left transition-all duration-200",
+            "bg-card/60 backdrop-blur-xl border border-border/30",
+            "hover:border-violet-500/50 hover:bg-violet-500/5",
+            "active:scale-[0.98]",
+            "group relative overflow-hidden"
+          )}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+
+          <div className="relative flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-violet-500/15 flex items-center justify-center shrink-0 group-hover:bg-violet-500/25 transition-colors">
+              <ListMusic className="w-6 h-6 text-violet-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                Log a Festival
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Upload a lineup or pick artists from a festival you attended.
+              </p>
+              <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground/70">
+                <span className="flex items-center gap-1">
+                  <Upload className="w-3 h-3" />
+                  Image or text
+                </span>
+                <span className="flex items-center gap-1">
+                  <ListMusic className="w-3 h-3" />
+                  Batch gems
                 </span>
               </div>
             </div>

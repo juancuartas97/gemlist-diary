@@ -2,3 +2,9 @@ project_id = "olrzvyswlkvkbdkavmdy"
 
 [functions.search-event-details]
 verify_jwt = false
+
+[functions.parse-festival-lineup]
+verify_jwt = false
+
+[functions.enrich-artist]
+verify_jwt = false

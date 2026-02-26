@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Pickaxe, SlidersHorizontal, ArrowUpDown, X, KeyRound, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
@@ -7,10 +7,12 @@ import { useTargetEvents, useDeleteGoal } from '@/hooks/useUserGoals';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { GlassShelf, type ShelfItem } from '@/components/treasure/GlassShelf';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
+import { FestivalLineupModal } from '@/components/treasure/FestivalLineupModal';
 import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import { ClusterViewModal } from '@/components/treasure/ClusterViewModal';
 import { GhostGem } from '@/components/goals/GhostGem';
+import { supabase } from '@/integrations/supabase/client';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
 import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
 import ultraPin from '@/assets/pins/ultra.png';
@@ -40,8 +42,31 @@ export const TreasureChestTab = () => {
   const { data: targetEvents } = useTargetEvents(user?.id);
   const deleteGoal = useDeleteGoal();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showFestivalModal, setShowFestivalModal] = useState(false);
   const [showModeChooser, setShowModeChooser] = useState(false);
   const [collectionMode, setCollectionMode] = useState<CollectionMode>('memory');
+  const [userBadges, setUserBadges] = useState<FestivalBadge[]>([]);
+
+  // Fetch user festival badges
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchBadges = async () => {
+      const { data } = await supabase
+        .from('user_festival_badges')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('festival_date', { ascending: false });
+      if (data) {
+        setUserBadges(data.map((b: { series_name: string; festival_date: string; badge_color: string; custom_image_url: string | null }) => ({
+          name: b.series_name,
+          date: new Date(b.festival_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+          color: (b.badge_color || 'purple') as FestivalBadge['color'],
+          image: b.custom_image_url || undefined,
+        })));
+      }
+    };
+    fetchBadges();
+  }, [user?.id]);
   const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCluster, setSelectedCluster] = useState<UserGem[]>([]);
@@ -155,7 +180,7 @@ export const TreasureChestTab = () => {
               className="relative z-10 flex items-start gap-6 py-6 px-5 overflow-x-auto scrollbar-hide"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {festivalBadges.map((badge, i) => (
+              {[...userBadges, ...festivalBadges].map((badge, i) => (
                 <EnamelPin key={i} badge={badge} />
               ))}
             </div>
@@ -345,12 +370,23 @@ export const TreasureChestTab = () => {
       {/* Collection Mode Chooser */}
       <CollectionModeChooser
         open={showModeChooser}
-        onSelect={(mode) => { setCollectionMode(mode); setShowModeChooser(false); setShowAddModal(true); }}
+        onSelect={(mode) => {
+          setCollectionMode(mode);
+          setShowModeChooser(false);
+          if (mode === 'festival') {
+            setShowFestivalModal(true);
+          } else {
+            setShowAddModal(true);
+          }
+        }}
         onClose={() => setShowModeChooser(false)}
       />
 
       {/* Add Gem Modal */}
       <AddGemModal open={showAddModal} onOpenChange={setShowAddModal} onGemAdded={handleGemAdded} mode={collectionMode} />
+
+      {/* Festival Lineup Modal */}
+      <FestivalLineupModal open={showFestivalModal} onOpenChange={setShowFestivalModal} onGemsAdded={handleGemAdded} />
 
       {/* Cluster View Modal */}
       <ClusterViewModal gems={selectedCluster} open={showClusterModal} onOpenChange={setShowClusterModal} onGemClick={handleClusterGemClick} />
