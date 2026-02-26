@@ -8,6 +8,7 @@ import { HomeTab } from '@/components/tabs/HomeTab';
 import { TreasureChestTab } from '@/components/tabs/TreasureChestTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
+import { FestivalLineupModal } from '@/components/treasure/FestivalLineupModal';
 import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,7 @@ const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [showModeChooser, setShowModeChooser] = useState(false);
   const [showAddGemModal, setShowAddGemModal] = useState(false);
+  const [showFestivalModal, setShowFestivalModal] = useState(false);
   const [collectionMode, setCollectionMode] = useState<CollectionMode>('memory');
   const navigate = useNavigate();
   const { user, profile, loading, isMockMode } = useAuth();
@@ -140,17 +142,28 @@ const AppShell = () => {
         onSelect={(mode) => {
           setCollectionMode(mode);
           setShowModeChooser(false);
-          setShowAddGemModal(true);
+          if (mode === 'festival') {
+            setShowFestivalModal(true);
+          } else {
+            setShowAddGemModal(true);
+          }
         }}
         onClose={() => setShowModeChooser(false)}
       />
 
       {/* Add Gem Modal */}
-      <AddGemModal 
-        open={showAddGemModal} 
+      <AddGemModal
+        open={showAddGemModal}
         onOpenChange={setShowAddGemModal}
         onGemAdded={() => {}}
         mode={collectionMode}
+      />
+
+      {/* Festival Lineup Modal */}
+      <FestivalLineupModal
+        open={showFestivalModal}
+        onOpenChange={setShowFestivalModal}
+        onGemsAdded={() => {}}
       />
     </div>
   );
