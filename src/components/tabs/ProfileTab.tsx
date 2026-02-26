@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Music, ChevronRight } from 'lucide-react';
 import { GemBadge } from '@/components/GemBadge';
 import { StarRating } from '@/components/StarRating';
 import { TasteMapVisual } from '@/components/TasteMapVisual';
@@ -11,6 +13,7 @@ import { useUnlockedAchievements } from '@/hooks/useAchievements';
 import { AchievementPin } from '@/components/achievements/AchievementPin';
 
 export const ProfileTab = () => {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { data: unlockedAchievements } = useUnlockedAchievements(user?.id);
   const [showAddGoalModal, setShowAddGoalModal] = useState(false);
@@ -37,6 +40,21 @@ export const ProfileTab = () => {
           </p>
         )}
       </div>
+
+      {/* Artists Portal */}
+      <button
+        onClick={() => navigate('/artists')}
+        className="glass-card p-4 rounded-2xl w-full flex items-center gap-3 hover:border-primary/40 transition-colors"
+      >
+        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+          <Music className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 text-left">
+          <p className="text-sm font-semibold text-foreground">Artists</p>
+          <p className="text-xs text-muted-foreground">View your collected artists</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+      </button>
 
       {/* Badges - Enamel Pin Style */}
       {unlockedAchievements && unlockedAchievements.length > 0 && (
