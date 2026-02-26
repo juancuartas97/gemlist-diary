@@ -9,6 +9,7 @@ import Onboarding from "./pages/Onboarding";
 import Auth from "./pages/Auth";
 import AppShell from "./pages/AppShell";
 import SettingsPage from "./pages/SettingsPage";
+import ArtistsPortal from "./pages/ArtistsPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/app" element={<AppShell />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/artists" element={<ArtistsPortal />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
