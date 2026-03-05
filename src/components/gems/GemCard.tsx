@@ -230,6 +230,39 @@ function getRarityConfig(tier?: string | null): RarityConfig {
   return RARITY_CONFIG.common;
 }
 
+// ── Completeness bar ──────────────────────────────────────────────────────
+// 4 segments, one per signal: venue / ratings / note / GPS
+// score is 0 | 25 | 50 | 75 | 100
+
+interface CompletenessBarProps {
+  score: number; // 0–100, multiple of 25
+  color: string; // gem genre color
+}
+
+function CompletenessBar({ score, color }: CompletenessBarProps) {
+  const filled = Math.round(score / 25); // 0–4 segments lit
+  const LABELS = ['📍', '⭐', '📝', '📡'];
+  return (
+    <div className="flex items-center gap-1.5 mt-2">
+      <div className="flex gap-0.5 flex-1">
+        {LABELS.map((emoji, i) => (
+          <div
+            key={i}
+            title={['Venue', 'Ratings', 'Note', 'GPS'][i]}
+            className={`h-1 flex-1 rounded-full transition-all ${
+              i < filled ? 'opacity-90' : 'opacity-15'
+            }`}
+            style={{ backgroundColor: i < filled ? color : 'rgba(255,255,255,0.3)' }}
+          />
+        ))}
+      </div>
+      <span className="text-[9px] text-white/30 font-mono shrink-0 w-6 text-right">
+        {score}%
+      </span>
+    </div>
+  );
+}
+
 // ── Facet dot row ─────────────────────────────────────────────────────────
 
 function FacetDots({ label, value }: { label: string; value: number | null }) {
@@ -383,6 +416,11 @@ function GemCard({ gem, onClick, compact = false }: GemCardProps) {
             <p className="text-[10px] text-white/40 truncate">
               {[venueName, dateStr].filter(Boolean).join(' · ')}
             </p>
+          )}
+
+          {/* Completeness bar — full mode only */}
+          {!compact && (gem.completeness_score ?? 0) < 100 && (
+            <CompletenessBar score={gem.completeness_score ?? 0} color={gemColor} />
           )}
         </div>
       </div>

@@ -359,6 +359,70 @@ export const GemDetailModal = ({
                 </>
               )}
 
+              {/* Completeness Score */}
+              {(() => {
+                const score = gem.completeness_score ?? 0;
+                const signals: { label: string; icon: string; done: boolean; hint: string }[] = [
+                  { label: 'Venue',   icon: '📍', done: !!gem.venue_id,      hint: 'Edit gem to add a venue' },
+                  { label: 'Ratings', icon: '⭐', done: gem.is_rated,         hint: 'Rate your experience below' },
+                  { label: 'Note',    icon: '📝', done: !!gem.private_note,   hint: 'Add a personal note below' },
+                  { label: 'GPS',     icon: '📡', done: !!gem.is_live_mined,  hint: 'Mine live at the event for GPS verify' },
+                ];
+                const filledCount = signals.filter(s => s.done).length;
+                return (
+                  <>
+                    <div className="h-px bg-border/30" />
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-foreground/80 uppercase tracking-wide">
+                          Data Quality
+                        </h3>
+                        <span
+                          className="text-sm font-bold font-mono"
+                          style={{ color: score === 100 ? '#22c55e' : score >= 50 ? baseColor : 'rgba(255,255,255,0.4)' }}
+                        >
+                          {score}%
+                        </span>
+                      </div>
+
+                      {/* Segmented progress bar */}
+                      <div className="flex gap-1 mb-3">
+                        {signals.map((s, i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 flex-1 rounded-full transition-all ${s.done ? 'opacity-90' : 'opacity-20'}`}
+                            style={{ backgroundColor: s.done ? baseColor : 'rgba(255,255,255,0.3)' }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Signal rows */}
+                      <div className="space-y-1.5">
+                        {signals.map((s) => (
+                          <div key={s.label} className="flex items-center gap-2.5">
+                            <span className="text-sm w-5 text-center">{s.icon}</span>
+                            <span className={`text-sm flex-1 ${s.done ? 'text-foreground/70' : 'text-muted-foreground/60'}`}>
+                              {s.label}
+                            </span>
+                            {s.done ? (
+                              <span className="text-xs text-emerald-400 font-medium">✓</span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground/40 italic">{s.hint}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {filledCount === 4 && (
+                        <p className="text-xs text-emerald-400 text-center mt-3 font-medium">
+                          ✨ Perfect gem — all data captured
+                        </p>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+
               {/* Divider */}
               <div className="h-px bg-border/30" />
 

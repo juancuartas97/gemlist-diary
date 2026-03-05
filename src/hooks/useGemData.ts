@@ -53,6 +53,7 @@ export interface UserGem {
   gem_dna?: string | null;
   mint_number?: number | null;
   modifiers?: string[] | null;
+  completeness_score?: number | null;
   dj?: DJ;
   genre?: Genre;
   venue?: Venue;
