@@ -6,7 +6,19 @@ import { mockUnlockedAchievements } from '@/lib/mockData';
 export interface Achievement {
   id: string;
   slug: string;
-  category: 'artist_mastery' | 'genre_dedication' | 'venue_loyalty' | 'special';
+  category:
+    | 'artist_mastery'
+    | 'genre_dedication'
+    | 'venue_loyalty'
+    | 'special'
+    | 'critic'
+    | 'collector'
+    | 'explorer'
+    | 'city_collector'
+    | 'globe_trotter'
+    | 'live_wire'
+    | 'streak'
+    | 'completionist';
   name: string;
   description: string | null;
   tier: number;
@@ -46,11 +58,11 @@ export const useAchievementDefinitions = () => {
         .select('*')
         .order('category', { ascending: true })
         .order('tier', { ascending: true });
-      
+
       if (error) throw error;
       return data as Achievement[];
     },
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour - these rarely change
+    staleTime: 1000 * 60 * 60,
   });
 };
 
@@ -62,7 +74,7 @@ export const useUserAchievements = (userId: string | undefined) => {
     queryFn: async () => {
       if (isMockMode) return mockUnlockedAchievements;
       if (!userId) return [];
-      
+
       const { data, error } = await supabase
         .from('user_achievements')
         .select(`
@@ -71,7 +83,7 @@ export const useUserAchievements = (userId: string | undefined) => {
         `)
         .eq('user_id', userId)
         .order('unlocked_at', { ascending: false, nullsFirst: false });
-      
+
       if (error) throw error;
       return data as UserAchievement[];
     },
@@ -87,7 +99,7 @@ export const useUnlockedAchievements = (userId: string | undefined) => {
     queryFn: async () => {
       if (isMockMode) return mockUnlockedAchievements;
       if (!userId) return [];
-      
+
       const { data, error } = await supabase
         .from('user_achievements')
         .select(`
@@ -97,7 +109,7 @@ export const useUnlockedAchievements = (userId: string | undefined) => {
         .eq('user_id', userId)
         .not('unlocked_at', 'is', null)
         .order('unlocked_at', { ascending: false });
-      
+
       if (error) throw error;
       return data as UserAchievement[];
     },
@@ -111,7 +123,7 @@ export const useArtistMasteryProgress = (userId: string | undefined, djId: strin
     queryKey: ['artist-mastery', userId, djId],
     queryFn: async () => {
       if (!userId || !djId) return null;
-      
+
       const { data, error } = await supabase
         .from('user_achievements')
         .select(`
@@ -123,7 +135,7 @@ export const useArtistMasteryProgress = (userId: string | undefined, djId: strin
         .eq('achievement.category', 'artist_mastery')
         .order('achievement(tier)', { ascending: false })
         .limit(1);
-      
+
       if (error) throw error;
       return data?.[0] as UserAchievement | null;
     },
@@ -137,10 +149,10 @@ export const useArtistLeaderboard = (djId: string | undefined, limit: number = 1
     queryKey: ['artist-leaderboard', djId, limit],
     queryFn: async () => {
       if (!djId) return [];
-      
+
       const { data, error } = await supabase
         .rpc('get_artist_leaderboard', { p_dj_id: djId, p_limit: limit });
-      
+
       if (error) throw error;
       return data as ArtistLeaderboardEntry[];
     },
@@ -154,20 +166,20 @@ export const useUserArtistRank = (userId: string | undefined, djId: string | und
     queryKey: ['user-artist-rank', userId, djId],
     queryFn: async () => {
       if (!userId || !djId) return null;
-      
+
       const { data, error } = await supabase
         .rpc('get_artist_leaderboard', { p_dj_id: djId, p_limit: 1000 });
-      
+
       if (error) throw error;
-      
+
       const leaderboard = data as ArtistLeaderboardEntry[];
       const userEntry = leaderboard.find(entry => entry.user_id === userId);
-      
+
       if (!userEntry) return null;
-      
+
       const totalCollectors = leaderboard.length;
       const percentile = Math.round((1 - (userEntry.rank - 1) / totalCollectors) * 100);
-      
+
       return {
         ...userEntry,
         totalCollectors,
