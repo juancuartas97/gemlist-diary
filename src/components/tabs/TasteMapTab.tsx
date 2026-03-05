@@ -295,7 +295,22 @@ export const TasteMapTab = () => {
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5 pb-4">
+    <div className="pb-4">
+
+      {/* ── Tab header ───────────────────────────────────────────── */}
+      <div
+        className="sticky top-0 z-20 px-4 pt-4 pb-2.5 mb-4 border-b border-white/5"
+        style={{
+          background: 'hsl(150 40% 6% / 0.92)',
+          backdropFilter: 'blur(32px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+        }}
+      >
+        <h2 className="font-display font-bold text-white text-lg">TasteMap</h2>
+        <p className="text-[11px] text-white/35 mt-0.5">Your listening personality</p>
+      </div>
+
+      <div className="px-4 space-y-5">
 
       {/* ── Section: Stats row ──────────────────────────────────── */}
       <div>
@@ -451,11 +466,11 @@ export const TasteMapTab = () => {
                   <p className="font-display font-semibold text-white text-sm truncate">
                     {gem.dj?.stage_name ?? 'Unknown Artist'}
                   </p>
-                  <div className="flex items-center gap-2 text-[10px] text-white/35 mt-0.5">
+                  <div className="flex items-center gap-2 text-[10px] text-white/35 mt-0.5 overflow-hidden">
                     {gem.venue?.name && (
-                      <span className="flex items-center gap-1 truncate">
+                      <span className="flex items-center gap-1 truncate min-w-0">
                         <MapPin className="w-2.5 h-2.5 shrink-0" />
-                        {gem.venue.name}
+                        <span className="truncate">{gem.venue.name}</span>
                       </span>
                     )}
                     {dateStr && (
@@ -466,9 +481,9 @@ export const TasteMapTab = () => {
                     )}
                   </div>
                 </div>
-                {/* Genre name */}
+                {/* Genre tag — truncated */}
                 <span
-                  className="text-[9px] font-medium px-2 py-0.5 rounded-full border shrink-0"
+                  className="text-[9px] font-medium px-2 py-0.5 rounded-full border shrink-0 max-w-[80px] truncate"
                   style={{
                     color,
                     backgroundColor: color + '18',
@@ -483,6 +498,7 @@ export const TasteMapTab = () => {
         </div>
       </div>
 
+      </div>{/* end px-4 space-y-5 */}
     </div>
   );
 };

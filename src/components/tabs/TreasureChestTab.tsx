@@ -177,7 +177,7 @@ function FilterPanel({
   );
 
   return (
-    <div className="glass-card mx-3 mb-3 p-4">
+    <div className="px-4 pt-3 pb-2 border-b border-white/5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-display font-semibold text-white/80">Filters</span>
         {hasActive && (
@@ -371,14 +371,18 @@ export const TreasureChestTab = () => {
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-void">
-      {/* Ambient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[hsl(280_40%_8%/0.3)] to-transparent pointer-events-none" />
-
-      <div className="relative z-10 pb-32">
+    <div>
+      <div className="pb-4">
 
         {/* ── Tab header ───────────────────────────────────────────── */}
-        <div className="sticky top-0 z-20 px-4 pt-3 pb-2 bg-[hsl(150_40%_8%/0.85)] backdrop-blur-xl border-b border-white/5">
+        <div
+          className="sticky top-0 z-20 px-4 pt-4 pb-2.5 border-b border-white/5"
+          style={{
+            background: 'hsl(150 40% 6% / 0.92)',
+            backdropFilter: 'blur(32px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+          }}
+        >
           <div className="flex items-center justify-between">
             {/* Title + gem count */}
             <div className="flex items-center gap-2">
@@ -428,7 +432,7 @@ export const TreasureChestTab = () => {
 
         {/* ── Festival badges ───────────────────────────────────────── */}
         {allBadges.length > 0 && (
-          <div className="px-4 pt-4 pb-2">
+          <div className="px-4 pt-4 pb-2 overflow-hidden">
             <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2.5 font-medium">
               Attended
             </p>
@@ -445,23 +449,21 @@ export const TreasureChestTab = () => {
 
         {/* ── Filter panel ─────────────────────────────────────────── */}
         {showFilters && (
-          <div className="mt-2">
-            <FilterPanel
-              options={filterOptions}
-              filterGenre={filterGenre}
-              filterArtist={filterArtist}
-              filterVenue={filterVenue}
-              onGenre={setFilterGenre}
-              onArtist={setFilterArtist}
-              onVenue={setFilterVenue}
-              onClear={clearFilters}
-            />
-          </div>
+          <FilterPanel
+            options={filterOptions}
+            filterGenre={filterGenre}
+            filterArtist={filterArtist}
+            filterVenue={filterVenue}
+            onGenre={setFilterGenre}
+            onArtist={setFilterArtist}
+            onVenue={setFilterVenue}
+            onClear={clearFilters}
+          />
         )}
 
         {/* ── Target quests (GhostGems) ─────────────────────────────── */}
         {targetEvents && targetEvents.length > 0 && (
-          <div className="px-4 mt-4">
+          <div className="px-4 mt-3">
             <h3 className="text-xs font-display font-semibold text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               Target Quests
@@ -475,7 +477,7 @@ export const TreasureChestTab = () => {
         )}
 
         {/* ── Gem collection grid ───────────────────────────────────── */}
-        <div className="px-3 mt-4">
+        <div className="px-4 mt-4">
           {loading ? (
             /* Loading skeleton */
             <div className="grid grid-cols-2 gap-3">
@@ -519,8 +521,6 @@ export const TreasureChestTab = () => {
           )}
         </div>
 
-      </div>
-
       {/* ── Modals ────────────────────────────────────────────────── */}
       <AddGemModal
         open={showAddModal}
@@ -551,3 +551,4 @@ export const TreasureChestTab = () => {
     </div>
   );
 };
+
