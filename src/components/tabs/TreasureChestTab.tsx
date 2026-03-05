@@ -1,17 +1,17 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Pickaxe, SlidersHorizontal, ArrowUpDown, X, KeyRound, Lock } from 'lucide-react';
+import { Pickaxe, SlidersHorizontal, ArrowUpDown, X, ChevronDown, ChevronUp, Gem, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
 import { useAuth } from '@/hooks/useAuth';
 import { useTargetEvents, useDeleteGoal } from '@/hooks/useUserGoals';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
-import { GlassShelf, type ShelfItem } from '@/components/treasure/GlassShelf';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import { FestivalLineupModal } from '@/components/treasure/FestivalLineupModal';
 import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import { ClusterViewModal } from '@/components/treasure/ClusterViewModal';
 import { GhostGem } from '@/components/goals/GhostGem';
+import GemCard from '@/components/gems/GemCard';
 import { supabase } from '@/integrations/supabase/client';
 import edcVegasPin from '@/assets/pins/edc-vegas.png';
 import tomorrowlandPin from '@/assets/pins/tomorrowland.png';
@@ -25,78 +25,269 @@ import lostLandsPin from '@/assets/pins/lost-lands.png';
 
 // Festival badges data
 const festivalBadges: FestivalBadge[] = [
-  { name: 'EDC Vegas', date: 'May 2024', color: 'purple', image: edcVegasPin },
-  { name: 'Tomorrowland', date: 'Jul 2024', color: 'gold', image: tomorrowlandPin },
-  { name: 'Ultra', date: 'Mar 2024', color: 'red', image: ultraPin },
-  { name: 'Berghain', date: 'Sep 2024', color: 'silver', image: berghainPin },
-  { name: 'Lost Lands', date: 'Sep 2024', color: 'green', image: lostLandsPin },
-  { name: 'Electric Forest', date: 'Jun 2024', color: 'green', image: electricForestPin },
-  { name: 'Coachella', date: 'Apr 2024', color: 'gold', image: coachellaPin },
-  { name: 'Factory Town', date: 'Dec 2023', color: 'silver', image: factoryTownPin },
-  { name: 'Lollapalooza', date: 'Aug 2023', color: 'purple', image: lollapaloozaPin },
+  { name: 'EDC Vegas',       date: 'May 2024', color: 'purple', image: edcVegasPin },
+  { name: 'Tomorrowland',    date: 'Jul 2024', color: 'gold',   image: tomorrowlandPin },
+  { name: 'Ultra',           date: 'Mar 2024', color: 'red',    image: ultraPin },
+  { name: 'Berghain',        date: 'Sep 2024', color: 'silver', image: berghainPin },
+  { name: 'Lost Lands',      date: 'Sep 2024', color: 'green',  image: lostLandsPin },
+  { name: 'Electric Forest', date: 'Jun 2024', color: 'green',  image: electricForestPin },
+  { name: 'Coachella',       date: 'Apr 2024', color: 'gold',   image: coachellaPin },
+  { name: 'Factory Town',    date: 'Dec 2023', color: 'silver', image: factoryTownPin },
+  { name: 'Lollapalooza',    date: 'Aug 2023', color: 'purple', image: lollapaloozaPin },
 ];
+
+// ── Cluster card (multi-gem by same DJ) ───────────────────────────────────
+
+function ClusterCard({
+  gems,
+  onClick,
+}: {
+  gems: UserGem[];
+  onClick: (gems: UserGem[]) => void;
+}) {
+  const dj = gems[0].dj?.stage_name ?? 'Unknown Artist';
+  const colors = gems
+    .slice(0, 4)
+    .map(g => g.genre?.color_hex ?? '#6ee7b7');
+
+  return (
+    <button
+      onClick={() => onClick(gems)}
+      className="glass-card w-full text-left p-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+    >
+      <div className="flex items-center gap-3">
+        {/* Mini gem stack */}
+        <div className="relative w-10 h-10 shrink-0">
+          {colors.slice(0, 3).map((c, i) => (
+            <div
+              key={i}
+              className="absolute rounded-lg"
+              style={{
+                width: 28,
+                height: 28,
+                top: i * 3,
+                left: i * 3,
+                backgroundColor: c + '33',
+                border: `1px solid ${c}55`,
+                zIndex: 3 - i,
+              }}
+            />
+          ))}
+          <div className="absolute inset-0 flex items-end justify-end">
+            <span className="text-[9px] font-bold font-display text-white/80 bg-black/40 rounded-full px-1 leading-4">
+              ×{gems.length}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-semibold text-white text-sm leading-tight truncate">
+            {dj}
+          </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <Layers className="w-3 h-3 text-white/40" />
+            <span className="text-[10px] text-white/40">
+              {gems.length} gems collected
+            </span>
+          </div>
+          {/* Color dots for genre variety */}
+          <div className="flex gap-1 mt-1.5">
+            {colors.map((c, i) => (
+              <div key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: c }} />
+            ))}
+          </div>
+        </div>
+
+        <div className="shrink-0 text-white/20">
+          <ChevronDown className="w-4 h-4" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ── Empty state ────────────────────────────────────────────────────────────
+
+function ChestEmptyState({ onMine }: { onMine: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      {/* Large gem icon with ambient glow */}
+      <div className="relative mb-6">
+        <div className="absolute inset-0 rounded-full blur-3xl bg-emerald-400/20 scale-150" />
+        <Gem className="relative w-16 h-16 text-white/20" strokeWidth={1} />
+      </div>
+
+      <p className="font-display font-semibold text-white/60 text-lg mb-1">
+        Your chest is empty
+      </p>
+      <p className="text-white/35 text-sm mb-6 max-w-[200px] leading-relaxed">
+        Go catch some music. Your first gem is waiting.
+      </p>
+
+      <Button
+        onClick={onMine}
+        className="flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold bg-white/10 border border-white/15 text-white hover:bg-white/15 transition-all"
+      >
+        <Pickaxe className="w-4 h-4" />
+        Mine your first gem
+      </Button>
+    </div>
+  );
+}
+
+// ── Filter panel ───────────────────────────────────────────────────────────
+
+interface FilterPanelProps {
+  options: { genres: string[]; artists: string[]; venues: string[] };
+  filterGenre: string | null;
+  filterArtist: string | null;
+  filterVenue: string | null;
+  onGenre: (v: string | null) => void;
+  onArtist: (v: string | null) => void;
+  onVenue: (v: string | null) => void;
+  onClear: () => void;
+}
+
+function FilterPanel({
+  options, filterGenre, filterArtist, filterVenue,
+  onGenre, onArtist, onVenue, onClear,
+}: FilterPanelProps) {
+  const hasActive = filterGenre || filterArtist || filterVenue;
+
+  const Chip = ({
+    label,
+    active,
+    onClick,
+  }: {
+    label: string;
+    active: boolean;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`
+        px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all
+        ${active
+          ? 'bg-white/15 border-white/30 text-white'
+          : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70'
+        }
+      `}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="glass-card mx-3 mb-3 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-display font-semibold text-white/80">Filters</span>
+        {hasActive && (
+          <button onClick={onClear} className="text-xs text-white/50 flex items-center gap-1 hover:text-white/70">
+            <X className="w-3 h-3" /> Clear all
+          </button>
+        )}
+      </div>
+
+      {options.genres.length > 0 && (
+        <div className="mb-3">
+          <label className="text-[10px] uppercase tracking-wide text-white/30 mb-1.5 block">Genre</label>
+          <div className="flex flex-wrap gap-1.5">
+            {options.genres.map(g => (
+              <Chip key={g} label={g} active={filterGenre === g} onClick={() => onGenre(filterGenre === g ? null : g)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {options.artists.length > 0 && (
+        <div className="mb-3">
+          <label className="text-[10px] uppercase tracking-wide text-white/30 mb-1.5 block">Artist</label>
+          <div className="flex flex-wrap gap-1.5">
+            {options.artists.map(a => (
+              <Chip key={a} label={a} active={filterArtist === a} onClick={() => onArtist(filterArtist === a ? null : a)} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {options.venues.length > 0 && (
+        <div>
+          <label className="text-[10px] uppercase tracking-wide text-white/30 mb-1.5 block">Venue</label>
+          <div className="flex flex-wrap gap-1.5">
+            {options.venues.map(v => (
+              <Chip key={v} label={v} active={filterVenue === v} onClick={() => onVenue(filterVenue === v ? null : v)} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 
 export const TreasureChestTab = () => {
   const { user } = useAuth();
   const { gems, loading, refetch } = useUserGems(user?.id);
   const { data: targetEvents } = useTargetEvents(user?.id);
   const deleteGoal = useDeleteGoal();
-  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Modal / mode state
+  const [showAddModal, setShowAddModal]         = useState(false);
   const [showFestivalModal, setShowFestivalModal] = useState(false);
-  const [showModeChooser, setShowModeChooser] = useState(false);
-  const [collectionMode, setCollectionMode] = useState<CollectionMode>('memory');
+  const [showModeChooser, setShowModeChooser]   = useState(false);
+  const [collectionMode, setCollectionMode]     = useState<CollectionMode>('memory');
+  const [selectedGem, setSelectedGem]           = useState<UserGem | null>(null);
+  const [showDetailModal, setShowDetailModal]   = useState(false);
+  const [selectedCluster, setSelectedCluster]   = useState<UserGem[]>([]);
+  const [showClusterModal, setShowClusterModal] = useState(false);
+
+  // Filter / sort state
+  const [showFilters, setShowFilters]   = useState(false);
+  const [filterGenre, setFilterGenre]   = useState<string | null>(null);
+  const [filterArtist, setFilterArtist] = useState<string | null>(null);
+  const [filterVenue, setFilterVenue]   = useState<string | null>(null);
+  const [sortBy, setSortBy]             = useState<'date' | 'artist' | 'rarity'>('date');
+  const [sortDir, setSortDir]           = useState<'desc' | 'asc'>('desc');
+
+  // Festival badges from Supabase
   const [userBadges, setUserBadges] = useState<FestivalBadge[]>([]);
 
-  // Fetch user festival badges
   useEffect(() => {
     if (!user?.id) return;
-    const fetchBadges = async () => {
-      const { data } = await supabase
-        .from('user_festival_badges')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('festival_date', { ascending: false });
-      if (data) {
-        setUserBadges(data.map((b: { series_name: string; festival_date: string; badge_color: string; custom_image_url: string | null }) => ({
-          name: b.series_name,
-          date: new Date(b.festival_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-          color: (b.badge_color || 'purple') as FestivalBadge['color'],
-          image: b.custom_image_url || undefined,
-        })));
-      }
-    };
-    fetchBadges();
+    supabase
+      .from('user_festival_badges')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('festival_date', { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          setUserBadges(
+            data.map((b: {
+              series_name: string;
+              festival_date: string;
+              badge_color: string;
+              custom_image_url: string | null;
+            }) => ({
+              name:  b.series_name,
+              date:  new Date(b.festival_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+              color: (b.badge_color || 'purple') as FestivalBadge['color'],
+              image: b.custom_image_url || undefined,
+            }))
+          );
+        }
+      });
   }, [user?.id]);
-  const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedCluster, setSelectedCluster] = useState<UserGem[]>([]);
-  const [showClusterModal, setShowClusterModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filterGenre, setFilterGenre] = useState<string | null>(null);
-  const [filterArtist, setFilterArtist] = useState<string | null>(null);
-  const [filterVenue, setFilterVenue] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'date' | 'artist' | 'rarity'>('date');
-  const [sortDir, setSortDir] = useState<'desc' | 'asc'>('desc');
 
-  // Extract unique filter options from gems
-  const filterOptions = useMemo(() => {
-    const genres = [...new Set(gems.map(g => g.genre?.name).filter(Boolean))].sort() as string[];
-    const artists = [...new Set(gems.map(g => g.dj?.stage_name).filter(Boolean))].sort() as string[];
-    const venues = [...new Set(gems.map(g => g.venue?.name).filter(Boolean))].sort() as string[];
-    return { genres, artists, venues };
-  }, [gems]);
+  // ── Derived filter options ─────────────────────────────────────────────
 
-  // Apply filters
-  const filteredGems = useMemo(() => {
-    return gems.filter(g => {
-      if (filterGenre && g.genre?.name !== filterGenre) return false;
-      if (filterArtist && g.dj?.stage_name !== filterArtist) return false;
-      if (filterVenue && g.venue?.name !== filterVenue) return false;
-      return true;
-    });
-  }, [gems, filterGenre, filterArtist, filterVenue]);
+  const filterOptions = useMemo(() => ({
+    genres:  [...new Set(gems.map(g => g.genre?.name).filter(Boolean))].sort() as string[],
+    artists: [...new Set(gems.map(g => g.dj?.stage_name).filter(Boolean))].sort() as string[],
+    venues:  [...new Set(gems.map(g => g.venue?.name).filter(Boolean))].sort() as string[],
+  }), [gems]);
 
-  const hasActiveFilters = filterGenre || filterArtist || filterVenue;
+  const hasActiveFilters = !!(filterGenre || filterArtist || filterVenue);
 
   const clearFilters = () => {
     setFilterGenre(null);
@@ -104,273 +295,239 @@ export const TreasureChestTab = () => {
     setFilterVenue(null);
   };
 
-  // Build unified shelf items from filtered gems
-  const shelfItems = useMemo((): ShelfItem[] => {
-    const groupedByDJ = groupGemsByDJ(filteredGems);
-    const items: ShelfItem[] = [];
-    
-    groupedByDJ.forEach((djGems) => {
+  // ── Filtered + sorted gems ─────────────────────────────────────────────
+
+  const filteredGems = useMemo(() =>
+    gems.filter(g => {
+      if (filterGenre  && g.genre?.name     !== filterGenre)  return false;
+      if (filterArtist && g.dj?.stage_name  !== filterArtist) return false;
+      if (filterVenue  && g.venue?.name     !== filterVenue)  return false;
+      return true;
+    }),
+    [gems, filterGenre, filterArtist, filterVenue]
+  );
+
+  // Group by DJ → flat list of items (single | cluster), sorted
+  const collectionItems = useMemo(() => {
+    type Item =
+      | { type: 'single';  gem: UserGem }
+      | { type: 'cluster'; gems: UserGem[] };
+
+    const grouped = groupGemsByDJ(filteredGems);
+    const items: Item[] = [];
+
+    grouped.forEach(djGems => {
       if (djGems.length === 1) {
         items.push({ type: 'single', gem: djGems[0] });
       } else {
         items.push({ type: 'cluster', gems: djGems });
       }
     });
-    
+
+    const dir = sortDir === 'desc' ? -1 : 1;
+
     items.sort((a, b) => {
-      const gemA = a.type === 'single' ? a.gem : a.gems[0];
-      const gemB = b.type === 'single' ? b.gem : b.gems[0];
-      const dir = sortDir === 'desc' ? -1 : 1;
-      
+      const gA = a.type === 'single' ? a.gem : a.gems[0];
+      const gB = b.type === 'single' ? b.gem : b.gems[0];
+
       if (sortBy === 'artist') {
-        return dir * (gemA.dj?.stage_name || '').localeCompare(gemB.dj?.stage_name || '');
+        return dir * (gA.dj?.stage_name ?? '').localeCompare(gB.dj?.stage_name ?? '');
       }
       if (sortBy === 'rarity') {
-        return dir * ((gemA.rarity_score || 0) - (gemB.rarity_score || 0));
+        return dir * ((gA.rarity_score ?? 0) - (gB.rarity_score ?? 0));
       }
-      const dateA = a.type === 'single' 
-        ? new Date(a.gem.event_date) 
-        : new Date(Math.max(...a.gems.map(g => new Date(g.event_date).getTime())));
-      const dateB = b.type === 'single' 
-        ? new Date(b.gem.event_date) 
-        : new Date(Math.max(...b.gems.map(g => new Date(g.event_date).getTime())));
-      return dir * (dateA.getTime() - dateB.getTime());
+      // date
+      const latestDate = (item: Item) =>
+        item.type === 'single'
+          ? new Date(item.gem.event_date).getTime()
+          : Math.max(...item.gems.map(g => new Date(g.event_date).getTime()));
+      return dir * (latestDate(a) - latestDate(b));
     });
-    
+
     return items;
   }, [filteredGems, sortBy, sortDir]);
 
-  const shelves = useMemo(() => {
-    const result: ShelfItem[][] = [];
-    for (let i = 0; i < shelfItems.length; i += 3) {
-      result.push(shelfItems.slice(i, i + 3));
-    }
-    return result;
-  }, [shelfItems]);
+  // ── Handlers ──────────────────────────────────────────────────────────
 
-  const handleGemAdded = () => { refetch(); };
-  const handleGemClick = (gem: UserGem) => { setSelectedGem(gem); setShowDetailModal(true); };
+  const handleGemAdded     = () => refetch();
+  const handleGemClick     = (gem: UserGem) => { setSelectedGem(gem); setShowDetailModal(true); };
   const handleClusterClick = (clusterGems: UserGem[]) => { setSelectedCluster(clusterGems); setShowClusterModal(true); };
   const handleClusterGemClick = (gem: UserGem) => { setShowClusterModal(false); setSelectedGem(gem); setShowDetailModal(true); };
-  const handleGemDeleted = () => { setSelectedGem(null); refetch(); };
-  const handleGemUpdated = () => { refetch(); };
-  const handleRemoveTargetEvent = (goalId: string) => { if (!user?.id) return; deleteGoal.mutate({ goalId, userId: user.id }); };
+  const handleGemDeleted   = () => { setSelectedGem(null); refetch(); };
+  const handleGemUpdated   = () => refetch();
+  const handleRemoveTargetEvent = (goalId: string) => {
+    if (!user?.id) return;
+    deleteGoal.mutate({ goalId, userId: user.id });
+  };
+
+  const allBadges = [...userBadges, ...festivalBadges];
+
+  // ── Sort cycle helper ─────────────────────────────────────────────────
+
+  const cycleSortBy = () => {
+    const cycle: ('date' | 'artist' | 'rarity')[] = ['date', 'artist', 'rarity'];
+    setSortBy(prev => cycle[(cycle.indexOf(prev) + 1) % cycle.length]);
+  };
+
+  const SORT_LABELS = { date: 'Date', artist: 'Artist', rarity: 'Rarity' } as const;
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="treasure-chest min-h-screen relative overflow-hidden">
-      {/* Atmospheric Background */}
-      <div className="absolute inset-0 bg-void" />
-      <div className="nebula-smoke" />
-      
-      {/* Content */}
+    <div className="min-h-screen relative overflow-hidden bg-void">
+      {/* Ambient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[hsl(280_40%_8%/0.3)] to-transparent pointer-events-none" />
+
       <div className="relative z-10 pb-32">
-        {/* ===== THE CHEST ===== */}
-        <div className="mx-2 mt-2">
-          
-          {/* === A. THE LID === */}
-          <div className="chest-lid">
-            <div className="chest-lid-texture" />
-            
-            {/* Corner brackets on lid */}
-            <div className="chest-corner-bracket chest-corner-tl" />
-            <div className="chest-corner-bracket chest-corner-tr" />
-            
-            {/* Festival pins inside the lid */}
-            <div 
-              className="relative z-10 flex items-start gap-6 py-6 px-5 overflow-x-auto scrollbar-hide"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+
+        {/* ── Tab header ───────────────────────────────────────────── */}
+        <div className="sticky top-0 z-20 px-4 pt-3 pb-2 bg-[hsl(150_40%_8%/0.85)] backdrop-blur-xl border-b border-white/5">
+          <div className="flex items-center justify-between">
+            {/* Title + gem count */}
+            <div className="flex items-center gap-2">
+              <Gem className="w-5 h-5 text-emerald-400" strokeWidth={1.5} />
+              <h2 className="font-display font-bold text-white text-lg">Chest</h2>
+              {!loading && gems.length > 0 && (
+                <span className="text-[11px] font-medium text-white/40 bg-white/8 px-2 py-0.5 rounded-full border border-white/8">
+                  {gems.length} gem{gems.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-2">
+              {/* Sort */}
+              <button
+                onClick={cycleSortBy}
+                className="flex items-center gap-1 text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors px-2 py-1 rounded-lg hover:bg-white/8"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                {SORT_LABELS[sortBy]}
+              </button>
+
+              {/* Sort dir */}
+              <button
+                onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
+                className="text-white/40 hover:text-white/70 p-1 rounded-lg hover:bg-white/8 transition-colors"
+              >
+                {sortDir === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </button>
+
+              {/* Filter toggle */}
+              <button
+                onClick={() => setShowFilters(f => !f)}
+                className={`flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-lg transition-all ${
+                  hasActiveFilters
+                    ? 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20'
+                    : 'text-white/50 hover:text-white/80 hover:bg-white/8'
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                {hasActiveFilters ? 'Filtered' : 'Filter'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Festival badges ───────────────────────────────────────── */}
+        {allBadges.length > 0 && (
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2.5 font-medium">
+              Attended
+            </p>
+            <div
+              className="flex gap-4 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: 'none' }}
             >
-              {[...userBadges, ...festivalBadges].map((badge, i) => (
+              {allBadges.map((badge, i) => (
                 <EnamelPin key={i} badge={badge} />
               ))}
             </div>
-            
-            <div className="chest-lid-edge" />
           </div>
+        )}
 
-          {/* === B. HINGE STRIP === */}
-          <div className="chest-hinge">
-            <div className="chest-hinge-bolt chest-hinge-bolt-left" />
-            <div className="chest-hinge-bolt chest-hinge-bolt-right" />
+        {/* ── Filter panel ─────────────────────────────────────────── */}
+        {showFilters && (
+          <div className="mt-2">
+            <FilterPanel
+              options={filterOptions}
+              filterGenre={filterGenre}
+              filterArtist={filterArtist}
+              filterVenue={filterVenue}
+              onGenre={setFilterGenre}
+              onArtist={setFilterArtist}
+              onVenue={setFilterVenue}
+              onClear={clearFilters}
+            />
           </div>
+        )}
 
-          {/* === C. LOCK & KEY STRIP === */}
-          <div className="chest-lock-strip">
-            {/* Filter button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`chest-hardware-btn ${hasActiveFilters ? 'active' : ''}`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filter
-              {hasActiveFilters && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
-            </button>
-            
-            {/* Lock icon (center) */}
-            <div className="chest-lock-icon">
-              <Lock className="w-4 h-4" />
-              <div className="chest-keyhole" />
+        {/* ── Target quests (GhostGems) ─────────────────────────────── */}
+        {targetEvents && targetEvents.length > 0 && (
+          <div className="px-4 mt-4">
+            <h3 className="text-xs font-display font-semibold text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              Target Quests
+            </h3>
+            <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+              {targetEvents.map(goal => (
+                <GhostGem key={goal.id} goal={goal} size="sm" onRemove={handleRemoveTargetEvent} />
+              ))}
             </div>
-            
-            {/* Sort button */}
-            <button
-              onClick={() => {
-                const cycle: ('date' | 'artist' | 'rarity')[] = ['date', 'artist', 'rarity'];
-                const idx = cycle.indexOf(sortBy);
-                setSortBy(cycle[(idx + 1) % cycle.length]);
-              }}
-              className="chest-hardware-btn"
-            >
-              <ArrowUpDown className="w-3.5 h-3.5" />
-              {sortBy === 'date' ? 'Date' : sortBy === 'artist' ? 'Artist' : 'Rarity'}
-            </button>
-            
-            {/* Sort direction */}
-            <button
-              onClick={() => setSortDir(d => d === 'desc' ? 'asc' : 'desc')}
-              className="chest-hardware-btn small"
-            >
-              {sortDir === 'desc' ? '↓' : '↑'}
-            </button>
           </div>
+        )}
 
-          {/* Filter Panel */}
-          {showFilters && (
-            <div className="chest-filter-panel">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-amber-200/80">Filters</span>
-                {hasActiveFilters && (
-                  <button onClick={clearFilters} className="text-xs text-amber-400 flex items-center gap-1">
-                    <X className="w-3 h-3" /> Clear all
-                  </button>
-                )}
-              </div>
-              
-              {/* Genre filter */}
-              <div className="mb-2">
-                <label className="text-xs text-amber-200/40 mb-1 block">Genre</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {filterOptions.genres.map(g => (
-                    <button
-                      key={g}
-                      onClick={() => setFilterGenre(filterGenre === g ? null : g)}
-                      className={`chest-filter-chip ${filterGenre === g ? 'active' : ''}`}
-                    >
-                      {g}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Artist filter */}
-              <div className="mb-2">
-                <label className="text-xs text-amber-200/40 mb-1 block">Artist</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {filterOptions.artists.map(a => (
-                    <button
-                      key={a}
-                      onClick={() => setFilterArtist(filterArtist === a ? null : a)}
-                      className={`chest-filter-chip ${filterArtist === a ? 'active' : ''}`}
-                    >
-                      {a}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Venue filter */}
-              <div>
-                <label className="text-xs text-amber-200/40 mb-1 block">Venue</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {filterOptions.venues.map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setFilterVenue(filterVenue === v ? null : v)}
-                      className={`chest-filter-chip ${filterVenue === v ? 'active' : ''}`}
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {/* ── Gem collection grid ───────────────────────────────────── */}
+        <div className="px-3 mt-4">
+          {loading ? (
+            /* Loading skeleton */
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="glass-card p-3 h-28 animate-pulse"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                />
+              ))}
+            </div>
+          ) : gems.length === 0 ? (
+            <ChestEmptyState onMine={() => setShowModeChooser(true)} />
+          ) : collectionItems.length === 0 && hasActiveFilters ? (
+            /* No results for active filter */
+            <div className="flex flex-col items-center py-12 text-center">
+              <p className="text-white/40 text-sm mb-2">No gems match these filters</p>
+              <button onClick={clearFilters} className="text-emerald-400 text-sm hover:text-emerald-300">
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {collectionItems.map((item, idx) =>
+                item.type === 'single' ? (
+                  <GemCard
+                    key={item.gem.id}
+                    gem={item.gem}
+                    onClick={handleGemClick}
+                    compact
+                  />
+                ) : (
+                  <ClusterCard
+                    key={`cluster-${item.gems[0].dj_id ?? idx}`}
+                    gems={item.gems}
+                    onClick={handleClusterClick}
+                  />
+                )
+              )}
             </div>
           )}
-
-          {/* === D. THE BODY (velvet interior) === */}
-          <div className="chest-body">
-            {/* Corner brackets */}
-            <div className="chest-corner-bracket chest-corner-bl" />
-            <div className="chest-corner-bracket chest-corner-br" />
-            
-            {/* Velvet interior */}
-            <div className="chest-velvet-interior">
-              {/* Ghost Gems - Target Events */}
-              {targetEvents && targetEvents.length > 0 && (
-                <div className="mb-6 px-2">
-                  <h3 className="text-sm font-medium text-amber-200/60 mb-3 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                    Target Quests
-                  </h3>
-                  <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-                    {targetEvents.map((goal) => (
-                      <GhostGem key={goal.id} goal={goal} size="sm" onRemove={handleRemoveTargetEvent} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Gem shelves */}
-              <div className="perspective-container">
-                {loading ? (
-                  <div className="text-center py-16">
-                    <div className="empty-gem-glow mx-auto mb-4 animate-pulse" />
-                    <p className="text-amber-200/40 text-sm">Loading your gems...</p>
-                  </div>
-                ) : gems.length === 0 ? (
-                  <div className="chest-empty-state">
-                    <div className="chest-empty-keyhole">
-                      <KeyRound className="w-8 h-8 text-amber-400/50" />
-                    </div>
-                    <p className="text-amber-200/50 text-sm mt-4">Your chest awaits its first gem...</p>
-                    <p className="text-amber-200/30 text-xs mt-1">Tap the pickaxe to start mining</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6 px-1">
-                    {shelves.map((shelfItems, index) => (
-                      <GlassShelf 
-                        key={index}
-                        depth={index}
-                        items={shelfItems}
-                        onGemClick={handleGemClick}
-                        onClusterClick={handleClusterClick}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Wooden floor */}
-            <div className="chest-floor" />
-          </div>
         </div>
 
-        {/* Mine a Gem Button - Brass plate */}
-        <div className="flex justify-center mt-6 pb-4">
-          <Button
-            onClick={() => setShowModeChooser(true)}
-            className="chest-mine-button"
-          >
-            <Pickaxe className="w-5 h-5" />
-            <span className="font-semibold">Mine a Gem</span>
-          </Button>
-        </div>
       </div>
 
-      {/* Collection Mode Chooser */}
+      {/* ── Collection Mode Chooser ────────────────────────────────── */}
       <CollectionModeChooser
         open={showModeChooser}
-        onSelect={(mode) => {
+        onSelect={mode => {
           setCollectionMode(mode);
           setShowModeChooser(false);
           if (mode === 'festival') {
@@ -382,17 +539,34 @@ export const TreasureChestTab = () => {
         onClose={() => setShowModeChooser(false)}
       />
 
-      {/* Add Gem Modal */}
-      <AddGemModal open={showAddModal} onOpenChange={setShowAddModal} onGemAdded={handleGemAdded} mode={collectionMode} />
+      {/* ── Modals ────────────────────────────────────────────────── */}
+      <AddGemModal
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+        onGemAdded={handleGemAdded}
+        mode={collectionMode}
+      />
 
-      {/* Festival Lineup Modal */}
-      <FestivalLineupModal open={showFestivalModal} onOpenChange={setShowFestivalModal} onGemsAdded={handleGemAdded} />
+      <FestivalLineupModal
+        open={showFestivalModal}
+        onOpenChange={setShowFestivalModal}
+        onGemsAdded={handleGemAdded}
+      />
 
-      {/* Cluster View Modal */}
-      <ClusterViewModal gems={selectedCluster} open={showClusterModal} onOpenChange={setShowClusterModal} onGemClick={handleClusterGemClick} />
+      <ClusterViewModal
+        gems={selectedCluster}
+        open={showClusterModal}
+        onOpenChange={setShowClusterModal}
+        onGemClick={handleClusterGemClick}
+      />
 
-      {/* Gem Detail Modal */}
-      <GemDetailModal gem={selectedGem} open={showDetailModal} onOpenChange={setShowDetailModal} onGemDeleted={handleGemDeleted} onGemUpdated={handleGemUpdated} />
+      <GemDetailModal
+        gem={selectedGem}
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        onGemDeleted={handleGemDeleted}
+        onGemUpdated={handleGemUpdated}
+      />
     </div>
   );
 };
