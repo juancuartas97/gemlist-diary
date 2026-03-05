@@ -190,32 +190,33 @@ interface RarityConfig {
   GemShape: React.FC<{ color: string }>;
 }
 
+// Keys are lowercase to match DB-normalized rarity_tier strings ('common', 'rare', etc.)
 const RARITY_CONFIG: Record<string, RarityConfig> = {
-  Common: {
+  common: {
     label: 'Raw',
     textClass: 'rarity-common',
     borderColor: 'rgba(255,255,255,0.06)',
     GemShape: GemCutRaw,
   },
-  Uncommon: {
+  uncommon: {
     label: 'Cabochon',
     textClass: 'rarity-uncommon',
     borderColor: 'hsl(145 75% 55% / 0.25)',
     GemShape: GemCutCabochon,
   },
-  Rare: {
+  rare: {
     label: 'Brilliant',
     textClass: 'rarity-rare',
     borderColor: 'hsl(217 91% 60% / 0.35)',
     GemShape: GemCutBrilliant,
   },
-  Legendary: {
+  legendary: {
     label: 'Emerald Cut',
     textClass: 'rarity-legendary',
     borderColor: 'hsl(38 92% 55% / 0.45)',
     GemShape: GemCutEmerald,
   },
-  Mythic: {
+  mythic: {
     label: 'Marquise',
     textClass: 'rarity-mythic',
     borderColor: 'hsl(280 95% 60% / 0.55)',
@@ -224,8 +225,9 @@ const RARITY_CONFIG: Record<string, RarityConfig> = {
 };
 
 function getRarityConfig(tier?: string | null): RarityConfig {
-  if (tier && tier in RARITY_CONFIG) return RARITY_CONFIG[tier];
-  return RARITY_CONFIG.Common;
+  const key = (tier ?? '').toLowerCase();
+  if (key && key in RARITY_CONFIG) return RARITY_CONFIG[key];
+  return RARITY_CONFIG.common;
 }
 
 // ── Facet dot row ─────────────────────────────────────────────────────────

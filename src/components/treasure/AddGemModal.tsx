@@ -26,6 +26,7 @@ import {
 import { useDJRecentPerformances } from '@/hooks/useDJRecentPerformances';
 import { type EventEdition } from '@/hooks/useEventSeries';
 import { calculateRarity, type RarityResult } from '@/hooks/useRarityCalculator';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import {
@@ -355,11 +356,18 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded, mode = 'memory' }:
 
       // Get city from venue for rarity calculation
       const city = selectedVenue?.city || null;
-      
-      // Get event series ID from selected event if it's an edition
-      // For now, we'll pass null since we need to track series separately
-      const eventSeriesId = null; // TODO: Extract from edition if available
-      
+
+      // Get event series ID from the selected event's edition record
+      let eventSeriesId: string | null = null;
+      if (selectedEvent?.id) {
+        const { data: editionData } = await supabase
+          .from('event_editions')
+          .select('series_id')
+          .eq('id', selectedEvent.id)
+          .maybeSingle();
+        eventSeriesId = editionData?.series_id ?? null;
+      }
+
       // Calculate rarity BEFORE inserting gem
       const rarityResult = await calculateRarity(
         djToUse.id,

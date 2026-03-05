@@ -60,7 +60,8 @@ export const calculateRarity = async (
 
   return {
     total_score: result.total_score,
-    rarity_tier: result.rarity_tier as RarityTier,
+    // Normalize to lowercase — DB returns uppercase ('MYTHIC'), types expect lowercase ('mythic')
+    rarity_tier: (result.rarity_tier as string).toLowerCase() as RarityTier,
     venue_score: result.venue_score,
     city_score: result.city_score,
     event_score: result.event_score,
