@@ -548,6 +548,7 @@ export const TreasureChestTab = () => {
         onGemDeleted={handleGemDeleted}
         onGemUpdated={handleGemUpdated}
       />
+      </div>
     </div>
   );
 };
