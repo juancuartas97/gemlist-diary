@@ -363,27 +363,41 @@ function GemCard({ gem, onClick, compact = false }: GemCardProps) {
             </div>
           </div>
 
-          {/* Genre tag */}
-          <div className="flex items-center gap-2 mb-2">
-            <span
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border"
-              style={{
-                backgroundColor: gemColor + '22',
-                borderColor: gemColor + '55',
-                color: gemColor,
-              }}
-            >
+          {/* Genre tag + rarity */}
+          {compact ? (
+            /* Compact: just a color dot + rarity label — conserves horizontal space in 2-col grid */
+            <div className="flex items-center gap-1.5 mb-1.5">
               <span
-                className="w-1.5 h-1.5 rounded-full"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: gemColor }}
               />
-              {genreName}
-            </span>
+              <span className={`text-[9px] font-display font-semibold uppercase tracking-wide truncate ${rarity.textClass}`}>
+                {rarity.label}
+              </span>
+            </div>
+          ) : (
+            /* Full: pill chip + rarity label */
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border max-w-[120px]"
+                style={{
+                  backgroundColor: gemColor + '22',
+                  borderColor: gemColor + '55',
+                  color: gemColor,
+                }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: gemColor }}
+                />
+                <span className="truncate">{genreName}</span>
+              </span>
 
-            <span className={`text-[10px] font-display font-semibold uppercase tracking-wide ${rarity.textClass}`}>
-              {rarity.label}
-            </span>
-          </div>
+              <span className={`text-[10px] font-display font-semibold uppercase tracking-wide shrink-0 ${rarity.textClass}`}>
+                {rarity.label}
+              </span>
+            </div>
+          )}
 
           {/* Meta: venue + date */}
           {!compact && (

@@ -353,10 +353,13 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="bg-card/95 backdrop-blur-xl border-border/30 max-w-md max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
+        <DialogContent
+          className="max-w-md max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto border-white/10"
+          style={{ background: 'hsl(150 40% 6% / 0.97)', backdropFilter: 'blur(32px) saturate(180%)' }}
+        >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2.5 text-lg font-semibold">
-              {/* Live gem color preview dot */}
+            <DialogTitle className="flex items-center gap-2.5">
+              {/* Live gem color preview — animates as artist is selected */}
               <div
                 className="w-5 h-5 rounded-sm shrink-0 transition-all duration-300"
                 style={{
@@ -364,10 +367,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                   boxShadow: `0 0 10px ${gemColor}50`,
                 }}
               />
-              Mine a Gem
+              <span className="font-display font-bold text-white text-base">Mine a Gem</span>
               {/* Passive GPS status */}
               {locating && (
-                <span className="ml-auto text-[10px] font-normal text-muted-foreground flex items-center gap-1">
+                <span className="ml-auto text-[10px] font-normal text-white/40 flex items-center gap-1">
                   <Navigation className="w-3 h-3 animate-pulse" />
                   Locating…
                 </span>
@@ -406,7 +409,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
             {/* Genre selector — only appears for new DJ */}
             {showNewDJGenreSelect && (
               <Select value={selectedGenreId} onValueChange={setSelectedGenreId}>
-                <SelectTrigger className="bg-background/50 border-border/30">
+                <SelectTrigger className="bg-white/5 border-white/10 text-white/70">
                   <SelectValue placeholder="Genre for new artist *" />
                 </SelectTrigger>
                 <SelectContent>
@@ -425,7 +428,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
             {/* ── Recent performances quick-select ── */}
             {selectedDJ && !showNewDJGenreSelect && (
               <div className="space-y-1.5">
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-0.5">
+                <p className="text-[10px] font-medium text-white/30 uppercase tracking-widest px-0.5">
                   Recent shows
                 </p>
                 {recentLoading ? (
@@ -442,7 +445,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground/50 italic py-1">
+                  <p className="text-xs text-white/25 italic py-1">
                     No recent shows logged for {selectedDJ.stage_name}
                   </p>
                 )}
@@ -451,8 +454,8 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
 
             {/* ── Optional details: venue + event + date ── */}
             <div className="space-y-2.5">
-              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-0.5">
-                Details <span className="normal-case font-normal">(optional)</span>
+              <p className="text-[10px] font-medium text-white/30 uppercase tracking-widest px-0.5">
+                Details <span className="normal-case font-normal opacity-60">(optional)</span>
               </p>
 
               <AutocompleteInput
@@ -496,12 +499,12 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
               />
 
               <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <Input
                   type="date"
                   value={eventDate}
                   onChange={(e) => setEventDate(e.target.value)}
-                  className="pl-10 bg-background/50 border-border/30"
+                  className="pl-10 bg-white/5 border-white/10 text-white/80"
                 />
               </div>
             </div>
@@ -510,7 +513,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
             <button
               type="button"
               onClick={() => setShowEnrichment(v => !v)}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-background/30 border border-border/20 text-sm text-muted-foreground hover:text-foreground hover:border-border/40 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 border border-white/8 text-sm text-white/40 hover:text-white/70 hover:border-white/15 transition-colors"
             >
               <span>Rate this set</span>
               {showEnrichment ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -518,7 +521,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
 
             {showEnrichment && (
               <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                <div className="p-4 rounded-xl bg-background/30 border border-border/20">
+                <div className="p-4 rounded-xl bg-white/5 border border-white/8">
                   <FacetRatingsGroup
                     ratings={facetRatings}
                     onChange={handleFacetChange}
@@ -529,7 +532,7 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                   placeholder="Notes (optional)"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full h-16 rounded-xl border border-border/30 bg-background/50 backdrop-blur-sm px-4 py-3 text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 text-sm"
+                  className="w-full h-16 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm px-4 py-3 text-white/80 placeholder:text-white/25 resize-none focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 text-sm"
                 />
               </div>
             )}
@@ -556,10 +559,10 @@ export const AddGemModal = ({ open, onOpenChange, onGemAdded }: AddGemModalProps
                   </svg>
                 </div>
                 <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">
+                  <div className="text-sm font-display font-semibold text-white truncate">
                     {selectedDJ?.stage_name || djQuery}
                   </div>
-                  <div className="text-xs text-muted-foreground truncate">
+                  <div className="text-xs text-white/40 truncate">
                     {currentGenre?.name || 'Select genre'}
                     {selectedVenue && <span> · {selectedVenue.name}</span>}
                     {selectedEvent && <span> · {selectedEvent.title}</span>}
