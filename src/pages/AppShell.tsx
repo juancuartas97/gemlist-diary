@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, User as UserIcon, Activity } from 'lucide-react';
 import { TreasureChestIcon } from '@/components/icons/TreasureChestIcon';
@@ -24,9 +24,13 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 ];
 
 const AppShell = () => {
-  const [activeTab, setActiveTab]           = useState<Tab>('home');
-  const [showAddGemModal, setShowAddGemModal] = useState(false);
+  const [activeTab, setActiveTab]             = useState<Tab>('home');
+  const [showAddGemModal, setShowAddGemModal]   = useState(false);
   const [showFestivalModal, setShowFestivalModal] = useState(false);
+
+  // Draggable FAB — snaps to left or right edge
+  const [fabOnRight, setFabOnRight]   = useState(true);
+  const fabDragRef = useRef<{ startX: number; moved: boolean } | null>(null);
   const navigate                            = useNavigate();
   const { user, loading, isMockMode }       = useAuth();
 
@@ -61,25 +65,60 @@ const AppShell = () => {
           We only add bottom padding so content isn't hidden under nav+FAB.
         */}
         <main className="flex-1 overflow-y-auto pb-[5.5rem]">
-          {activeTab === 'home'     && <HomeTab onMine={() => setShowAddGemModal(true)} />}
+          {activeTab === 'home'     && (
+            <HomeTab
+              onMine={() => setShowAddGemModal(true)}
+              onVibePress={() => setActiveTab('map')}
+            />
+          )}
           {activeTab === 'treasure' && <TreasureChestTab />}
           {activeTab === 'map'      && <TasteMapTab />}
           {activeTab === 'profile'  && <ProfileTab />}
         </main>
 
-        {/* ── Floating pickaxe FAB ────────────────────────────────── */}
+        {/* ── Floating pickaxe FAB — draggable left / right ───────── */}
+        {/*
+          Drag the FAB sideways to move it to the other edge.
+          Short tap = open Mine modal.
+        */}
         <button
-          onClick={() => setShowAddGemModal(true)}
           aria-label="Mine a gem"
           className={cn(
             'fixed z-30 w-14 h-14 rounded-full',
             'flex items-center justify-center',
-            'bg-primary transition-transform hover:scale-110 active:scale-95',
+            'bg-primary',
+            fabDragRef.current?.moved
+              ? 'cursor-grabbing'
+              : 'cursor-grab transition-transform hover:scale-110 active:scale-95',
           )}
           style={{
             bottom: `calc(${NAV_H + 16}px)`,
-            right: '1rem',
+            [fabOnRight ? 'right' : 'left']: '1rem',
             boxShadow: '0 0 30px hsl(var(--primary) / 0.55), 0 8px 32px rgba(0,0,0,0.45)',
+            touchAction: 'none',
+            userSelect: 'none',
+          }}
+          onPointerDown={e => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            fabDragRef.current = { startX: e.clientX, moved: false };
+          }}
+          onPointerMove={e => {
+            if (!fabDragRef.current) return;
+            if (Math.abs(e.clientX - fabDragRef.current.startX) > 12) {
+              fabDragRef.current.moved = true;
+            }
+          }}
+          onPointerUp={e => {
+            if (!fabDragRef.current) return;
+            const { moved } = fabDragRef.current;
+            fabDragRef.current = null;
+            if (moved) {
+              // Snap: if pointer ended on right half of screen → right, else left
+              setFabOnRight(e.clientX > window.innerWidth / 2);
+            } else {
+              // Normal tap
+              setShowAddGemModal(true);
+            }
           }}
         >
           <Pickaxe className="w-6 h-6 text-primary-foreground" />

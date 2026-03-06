@@ -9,7 +9,7 @@ export const TreasureChestIcon: React.FC<TreasureChestIconProps> = ({ className,
   <svg
     width={size}
     height={size}
-    viewBox="0 0 24 24"
+    viewBox="0 -2 24 26"
     fill="none"
     stroke="currentColor"
     strokeWidth={2}

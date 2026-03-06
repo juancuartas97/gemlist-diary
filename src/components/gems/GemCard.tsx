@@ -289,10 +289,11 @@ function FacetDots({ label, value }: { label: string; value: number | null }) {
 interface GemCardProps {
   gem: UserGem;
   onClick?: (gem: UserGem) => void;
-  compact?: boolean; // 2-col grid mode
+  compact?: boolean;     // 2-col grid mode
+  previewMode?: boolean; // Home tab: gem icon is hero, all extras stripped
 }
 
-function GemCard({ gem, onClick, compact = false }: GemCardProps) {
+function GemCard({ gem, onClick, compact = false, previewMode = false }: GemCardProps) {
   const rarity = getRarityConfig(gem.rarity_tier);
   const { GemShape } = rarity;
 
@@ -309,6 +310,57 @@ function GemCard({ gem, onClick, compact = false }: GemCardProps) {
 
   const hasRatings = gem.is_rated && gem.facet_ratings;
 
+  // ── Preview mode (Home tab) ───────────────────────────────────────────
+  // Gem crystal is the hero. One clean row of info below. No extras.
+  if (previewMode) {
+    return (
+      <button
+        onClick={() => onClick?.(gem)}
+        className="glass-card w-full text-left p-3.5 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+        style={{ borderColor: rarity.borderColor }}
+      >
+        <div className="flex gap-3 items-center">
+          {/* Gem crystal — featured */}
+          <div className="shrink-0 relative w-12 h-12">
+            <div
+              className="absolute inset-0 rounded-full blur-lg opacity-50"
+              style={{ backgroundColor: gemColor }}
+            />
+            <GemShape color={gemColor} />
+          </div>
+
+          {/* Core info only */}
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-white text-[0.9rem] leading-tight truncate mb-1">
+              {djName}
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: gemColor }}
+              />
+              <span className="text-[10px] text-white/50 truncate">
+                {genreName}
+              </span>
+              {(venueName || dateStr) && (
+                <span className="text-white/20 text-[10px]">·</span>
+              )}
+              <span className="text-[10px] text-white/35 truncate">
+                {[venueName, dateStr].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          </div>
+
+          {/* Chevron hint */}
+          <svg className="w-4 h-4 text-white/20 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </button>
+    );
+  }
+
+  // ── Standard card (compact or full) ──────────────────────────────────
   return (
     <button
       onClick={() => onClick?.(gem)}

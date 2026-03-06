@@ -1,8 +1,10 @@
-import { BarChart3, Gem, Loader2, Pickaxe, MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, Gem, Loader2, Pickaxe, Info, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserGems } from '@/hooks/useGemData';
+import { useUserGems, type UserGem } from '@/hooks/useGemData';
 import { useMemo } from 'react';
 import GemCard from '@/components/gems/GemCard';
+import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 
@@ -57,11 +59,18 @@ function HomeEmptyState({ onMine }: { onMine?: () => void }) {
 
 interface HomeTabProps {
   onMine?: () => void;
+  onVibePress?: () => void; // navigate to Map tab
 }
 
-export const HomeTab = ({ onMine }: HomeTabProps) => {
+export const HomeTab = ({ onMine, onVibePress }: HomeTabProps) => {
   const { user, profile } = useAuth();
-  const { gems, loading } = useUserGems(user?.id);
+  const { gems, loading, refetch } = useUserGems(user?.id);
+
+  // Detail modal state
+  const [selectedGem, setSelectedGem] = useState<UserGem | null>(null);
+
+  // "Your Vibe" info tooltip
+  const [showVibeInfo, setShowVibeInfo] = useState(false);
 
   const metrics = useMemo(() => {
     const totalGems     = gems.length;
@@ -98,6 +107,7 @@ export const HomeTab = ({ onMine }: HomeTabProps) => {
       lastMined,
       lastDate,
       genreWeights: genreWeights.slice(0, 4),
+      topGenreColor: genreWeights[0]?.color ?? '#6ee7b7',
       uniqueVenues,
       uniqueArtists,
     };
@@ -121,127 +131,145 @@ export const HomeTab = ({ onMine }: HomeTabProps) => {
   const isEmpty = metrics.totalGems === 0;
 
   return (
-    <div className="pt-4 pb-4 space-y-5">
+    <>
+      <div className="pt-4 pb-4 space-y-5">
 
-      {/* ── Greeting header ──────────────────────────────────────── */}
-      <div className="px-4 flex items-center gap-3">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt="Profile"
-            className="w-11 h-11 rounded-full object-cover border-2 border-primary/30 shrink-0"
-          />
-        ) : (
-          <div className="w-11 h-11 rounded-full bg-primary/15 border-2 border-primary/25 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold font-display text-primary">
-              {firstName.charAt(0).toUpperCase()}
-            </span>
+        {/* ── Greeting header ────────────────────────────────────────── */}
+        <div className="px-4 flex items-center gap-3">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="Profile"
+              className="w-11 h-11 rounded-full object-cover border-2 border-primary/30 shrink-0"
+            />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-primary/15 border-2 border-primary/25 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold font-display text-primary">
+                {firstName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] text-white/35">{getGreeting()}</p>
+            <h1 className="font-display font-bold text-white text-xl leading-tight truncate">
+              {firstName}
+            </h1>
           </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] text-white/35">{getGreeting()}</p>
-          <h1 className="font-display font-bold text-white text-xl leading-tight truncate">
-            {firstName}
-          </h1>
+          {metrics.totalGems > 0 && (
+            <div className="shrink-0 text-right">
+              <p className="font-display font-bold text-primary text-xl leading-none">
+                {metrics.totalGems}
+              </p>
+              <p className="text-[9px] text-white/30 uppercase tracking-wide">gems</p>
+            </div>
+          )}
         </div>
-        {/* Subtle gem count if non-zero */}
-        {metrics.totalGems > 0 && (
-          <div className="shrink-0 text-right">
-            <p className="font-display font-bold text-primary text-xl leading-none">
-              {metrics.totalGems}
-            </p>
-            <p className="text-[9px] text-white/30 uppercase tracking-wide">gems</p>
-          </div>
+
+        {/* ── Empty state ───────────────────────────────────────────── */}
+        {isEmpty ? (
+          <HomeEmptyState onMine={onMine} />
+        ) : (
+          <>
+            {/* ── Quick stats ─────────────────────────────────────── */}
+            <div className="px-4 flex gap-2">
+              <StatChip label="Artists" value={metrics.uniqueArtists} />
+              <StatChip label="Venues"  value={metrics.uniqueVenues}  />
+            </div>
+
+            {/* ── Your Vibe (genre mini-bars) ───────────────────────── */}
+            {metrics.genreWeights.length > 0 && (
+              <div className="px-4">
+                {/* Card tinted with top genre color */}
+                <button
+                  className="glass-card w-full text-left p-4 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                  style={{
+                    borderColor: metrics.topGenreColor + '35',
+                    background: `linear-gradient(135deg, ${metrics.topGenreColor}08 0%, transparent 60%)`,
+                  }}
+                  onClick={onVibePress}
+                >
+                  {/* Header */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                    <p className="font-display font-semibold text-white text-xs uppercase tracking-widest flex-1">
+                      Your Vibe
+                    </p>
+                    {/* Info icon — stops propagation so tap doesn't navigate */}
+                    <button
+                      className="p-1 -m-1 rounded-lg"
+                      onClick={e => { e.stopPropagation(); setShowVibeInfo(v => !v); }}
+                      aria-label="How is this calculated?"
+                    >
+                      <Info className="w-3.5 h-3.5 text-white/25 hover:text-white/50 transition-colors" />
+                    </button>
+                    <ChevronRight className="w-3.5 h-3.5 text-white/20" />
+                  </div>
+
+                  {/* Info tooltip */}
+                  {showVibeInfo && (
+                    <div className="mb-3 px-2.5 py-2 rounded-xl bg-white/6 border border-white/8 text-[11px] text-white/45 leading-relaxed">
+                      Weighted by how many sets you've logged per genre. The more you log, the more accurate your vibe becomes.
+                    </div>
+                  )}
+
+                  {/* Genre bars — each bar uses its genre's color + glow */}
+                  <div className="space-y-2.5">
+                    {metrics.genreWeights.map(genre => (
+                      <div key={genre.name}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-[11px] font-medium text-white/70 truncate max-w-[60%]">
+                            {genre.name}
+                          </span>
+                          <span className="text-[10px] text-white/35 shrink-0 ml-2">{genre.weight}%</span>
+                        </div>
+                        <div className="h-1.5 bg-white/6 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${Math.max(genre.weight, 5)}%`,
+                              backgroundColor: genre.color,
+                              boxShadow: `0 0 8px ${genre.color}90`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {/* ── Freshly Mined ─────────────────────────────────────── */}
+            <div className="px-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Gem className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                <h2 className="font-display font-semibold text-white text-xs uppercase tracking-widest">
+                  Freshly Mined
+                </h2>
+              </div>
+              {/* Preview cards — gem is hero, tap to open detail modal */}
+              <div className="space-y-2">
+                {metrics.recentGems.map(gem => (
+                  <GemCard
+                    key={gem.id}
+                    gem={gem}
+                    previewMode
+                    onClick={setSelectedGem}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
 
-      {/* ── Empty state ───────────────────────────────────────────── */}
-      {isEmpty ? (
-        <HomeEmptyState onMine={onMine} />
-      ) : (
-        <>
-          {/* ── Quick stats ─────────────────────────────────────── */}
-          <div className="px-4 flex gap-2">
-            <StatChip label="Artists" value={metrics.uniqueArtists} />
-            <StatChip label="Venues"  value={metrics.uniqueVenues}  />
-          </div>
-
-          {/* ── Your Vibe (genre mini-bars) ───────────────────────── */}
-          {metrics.genreWeights.length > 0 && (
-            <div className="px-4">
-              <div className="glass-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <BarChart3 className="w-3.5 h-3.5 text-primary" />
-                  <p className="font-display font-semibold text-white text-xs uppercase tracking-widest">
-                    Your Vibe
-                  </p>
-                </div>
-                <div className="space-y-2.5">
-                  {metrics.genreWeights.map(genre => (
-                    <div key={genre.name}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[11px] font-medium text-white/70 truncate max-w-[60%]">
-                          {genre.name}
-                        </span>
-                        <span className="text-[10px] text-white/35 shrink-0">{genre.weight}%</span>
-                      </div>
-                      <div className="h-1.5 bg-white/6 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${genre.weight}%`, backgroundColor: genre.color, opacity: 0.8 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Freshly Mined ─────────────────────────────────────── */}
-          <div className="px-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Gem className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
-              <h2 className="font-display font-semibold text-white text-xs uppercase tracking-widest">
-                Freshly Mined
-              </h2>
-            </div>
-            <div className="space-y-2.5">
-              {metrics.recentGems.map(gem => (
-                <GemCard key={gem.id} gem={gem} />
-              ))}
-            </div>
-          </div>
-
-          {/* ── Last session callout ──────────────────────────────── */}
-          {metrics.lastMined && metrics.recentGems.length === 0 && (
-            <div className="px-4">
-              <div className="glass-card p-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                  <Gem className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-white/35 uppercase tracking-wide">Last mined</p>
-                  <p className="text-sm font-display font-semibold text-white leading-tight truncate">
-                    {metrics.lastMined.dj?.stage_name ?? 'Unknown Artist'}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {metrics.lastMined.venue?.name && (
-                      <span className="text-[10px] text-white/40 flex items-center gap-1 truncate">
-                        <MapPin className="w-2.5 h-2.5 shrink-0" />
-                        <span className="truncate">{metrics.lastMined.venue.name}</span>
-                      </span>
-                    )}
-                    {metrics.lastDate && (
-                      <span className="text-[10px] text-white/30 shrink-0">{metrics.lastDate}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+      {/* ── Gem detail modal ────────────────────────────────────────── */}
+      <GemDetailModal
+        gem={selectedGem}
+        open={!!selectedGem}
+        onOpenChange={open => { if (!open) setSelectedGem(null); }}
+        onGemDeleted={() => { setSelectedGem(null); refetch?.(); }}
+      />
+    </>
   );
 };
