@@ -1,0 +1,589 @@
+================================================================================
+GEMLIST DIARY - PROJECT EXPLORATION SUMMARY
+================================================================================
+
+Repository: https://github.com/juancuartas97/gemlist-diary.git
+Location: /sessions/festive-hopeful-clarke/tmp-repo
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+GemList is a mobile-web application designed for music and festival enthusiasts
+to collect and curate their musical experiences. Users can:
+- Collect "gems" from DJ sets and musical events
+- Build a personalized "treasure chest" of musical memories
+- Discover their musical taste profile (taste map)
+- Track achievements and goals related to their music journey
+- Explore event lineups and festival information
+
+The application has a cyberpunk-luxury aesthetic with skeuomorphic design elements
+(treasure chest theme), gemstone metaphors, and an immersive UI.
+
+================================================================================
+2. PROJECT STRUCTURE - DIRECTORY BREAKDOWN
+================================================================================
+
+/src
+├── /assets
+│   └── /pins                      (Festival/event pin images for markers)
+│       ├── coachella.png
+│       ├── tomorrowland.png
+│       ├── lost-lands.png
+│       ├── lollapalooza.png
+│       ├── ultra.png
+│       ├── electric-forest.png
+│       ├── factory-town.png
+│       ├── berghain.png
+│       └── edc-vegas.png
+│
+├── /components
+│   ├── AutocompleteInput.tsx
+│   ├── FacetRating.tsx            (Multi-facet rating system)
+│   ├── FloatingParticles.tsx       (Animated background particles)
+│   ├── GemBadge.tsx               (Gem status badge component)
+│   ├── GemIcon.tsx                (Main app gem icon)
+│   ├── MapVisual.tsx              (Geographic/cluster map visualization)
+│   ├── NavLink.tsx                (Navigation link wrapper)
+│   ├── PaginationDots.tsx         (Carousel pagination)
+│   ├── StarRating.tsx             (5-star rating component)
+│   ├── TasteMapVisual.tsx         (Musical taste 2D map visualization)
+│   ├── ThemeColorPicker.tsx       (Theme customization)
+│   │
+│   ├── /achievements              (Achievement/trophy system)
+│   │   ├── AchievementPin.tsx
+│   │   ├── AchievementProgress.tsx
+│   │   ├── GenesisTag.tsx
+│   │   └── TrophyCase.tsx
+│   │
+│   ├── /goals                     (User goals/quests system)
+│   │   ├── AddGoalModal.tsx
+│   │   ├── CountdownTimer.tsx
+│   │   ├── GhostGem.tsx
+│   │   └── GoalsList.tsx
+│   │
+│   ├── /icons
+│   │   └── TreasureChestIcon.tsx  (Custom treasure chest icon)
+│   │
+│   ├── /tabs                      (Main tab navigation components)
+│   │   ├── HomeTab.tsx            (Home/dashboard tab)
+│   │   ├── TreasureChestTab.tsx   (Gem collection display)
+│   │   ├── ProfileTab.tsx         (User profile tab)
+│   │   ├── CollectTab.tsx         (Alt collect interface)
+│   │   ├── EventsTab.tsx          (Events listing)
+│   │   └── TasteMapTab.tsx        (Musical taste visualization)
+│   │
+│   ├── /treasure                  (Treasure chest & gem components)
+│   │   ├── AddEventModal.tsx      (Add event/performance modal)
+│   │   ├── AddGemModal.tsx        (Add gem to collection modal)
+│   │   ├── ClusterViewModal.tsx   (Cluster view of gems)
+│   │   ├── CollectionModeChooser.tsx (Choose collect mode)
+│   │   ├── CrystalGem.tsx         (Individual gem display)
+│   │   ├── EnamelPin.tsx          (Enamel pin display)
+│   │   ├── FestivalLineupModal.tsx (Festival lineup selection)
+│   │   ├── GemCluster.tsx         (Group of gems)
+│   │   ├── GemDNADisplay.tsx      (Gem properties visualization)
+│   │   ├── GemDetailModal.tsx     (Detailed gem info modal)
+│   │   ├── GemMiningAnimation.tsx (Mining animation)
+│   │   ├── GlassShelf.tsx         (Display shelf for gems)
+│   │   ├── QuestCompleteAnimation.tsx (Goal completion animation)
+│   │   ├── RarityBreakdown.tsx    (Rarity statistics)
+│   │   └── RecentEventCard.tsx    (Recent event card)
+│   │
+│   └── /ui                        (shadcn/ui components - 50+ files)
+│       ├── accordion, alert, alert-dialog
+│       ├── button, badge, breadcrumb
+│       ├── calendar, card, carousel, checkbox
+│       ├── command, context-menu, dialog, drawer
+│       ├── dropdown-menu, form, input, label
+│       ├── popover, progress, select, slider
+│       ├── table, tabs, toast, tooltip
+│       └── [25+ more UI components...]
+│
+├── /hooks                         (Custom React hooks)
+│   ├── useAuth.tsx                (Authentication context & logic)
+│   ├── useGemData.ts              (Fetch/manage gem data)
+│   ├── useUserGoals.ts            (User goals/quests management)
+│   ├── useAchievements.ts         (Achievement tracking)
+│   ├── useRarityCalculator.ts     (Gem rarity calculation)
+│   ├── useGemDNA.ts               (Gem DNA properties)
+│   ├── useDJRecentPerformances.ts (DJ performance data)
+│   ├── useEventSeries.ts          (Event series management)
+│   ├── useGeolocation.ts          (Geographic location data)
+│   ├── use-toast.ts               (Toast notifications)
+│   └── use-mobile.tsx             (Mobile detection)
+│
+├── /integrations
+│   └── /supabase
+│       ├── client.ts              (Supabase client setup)
+│       └── types.ts               (TypeScript types from DB schema)
+│
+├── /lib
+│   ├── mockData.ts                (Mock data for development)
+│   ├── storage.ts                 (Local storage utilities)
+│   └── utils.ts                   (General utility functions)
+│
+├── /pages                         (Page/route components)
+│   ├── Index.tsx                  (Route guard/redirect)
+│   ├── Auth.tsx                   (Authentication page)
+│   ├── Onboarding.tsx             (First-time user flow)
+│   ├── AppShell.tsx               (Main app container with nav)
+│   ├── SettingsPage.tsx           (User settings)
+│   ├── ArtistsPortal.tsx          (Artist/DJ portal)
+│   └── NotFound.tsx               (404 page)
+│
+├── App.tsx                        (Router setup & providers)
+├── main.tsx                       (App entry point)
+├── index.css                      (Global styles, theme)
+└── App.css                        (App-specific styles)
+
+
+/public
+└── placeholder.svg                (Placeholder image)
+
+/supabase                          (Database migrations/setup)
+
+Root config files:
+├── package.json                   (Dependencies & scripts)
+├── package-lock.json
+├── bun.lockb                      (Bun package manager lock)
+├── tsconfig.json                  (TypeScript config)
+├── tsconfig.app.json
+├── tsconfig.node.json
+├── vite.config.ts                 (Vite bundler config)
+├── tailwind.config.ts             (Tailwind CSS config)
+├── postcss.config.js              (PostCSS config)
+├── components.json                (shadcn/ui config)
+├── eslint.config.js               (ESLint config)
+├── index.html                     (HTML entry)
+├── .env                           (Environment variables)
+├── .gitignore
+├── .lovable/plan.md               (Design/feature plan)
+└── README.md
+
+================================================================================
+3. DESIGN FILES & MOCKUPS
+================================================================================
+
+UI MOCKUPS/DESIGN DOCUMENTATION:
+- .lovable/plan.md - Comprehensive skeuomorphic treasure chest redesign spec
+  * Includes visual structure ASCII diagram
+  * Details on wood grain texture CSS
+  * Lock/key motif specifications
+  * Velvet interior styling
+  * Metal hardware/corner bracket designs
+
+DESIGN ASSETS (Images):
+- /src/assets/pins/ - 9 festival pin images for geographic marker visualization
+  * Used in maps and location-based features
+  * Festival names: Coachella, Tomorrowland, Lost Lands, Lollapalooza, Ultra,
+    Electric Forest, Factory Town, Berghain, EDC Vegas
+
+CSS DESIGN SYSTEM:
+- Dark theme with cosmic gradient background
+- Cyberpunk-luxury aesthetic with neon accents
+- Custom gem color palette (green, purple, pink, blue, ruby, amber, emerald, sapphire, amethyst)
+- Glass-morphism UI components (glass-card, glass-button classes)
+- Extensive CSS animations and keyframes
+- Wood grain textures for treasure chest theme
+- Metal/brass gradients for hardware elements
+
+================================================================================
+4. TECHNOLOGY STACK
+================================================================================
+
+FRONTEND FRAMEWORK:
+- React 18.3.1 (latest)
+- React Router DOM 6.30.1 (client-side routing)
+- TypeScript 5.8.3 (type safety)
+- Vite 5.4.19 (build tool)
+
+STATE & DATA MANAGEMENT:
+- TanStack React Query 5.83.0 (server state management)
+- Supabase JS 2.89.0 (backend/database)
+- React Hook Form 7.61.1 (form handling)
+- Zod 3.25.76 (schema validation)
+
+UI COMPONENT LIBRARY:
+- shadcn/ui (50+ pre-built accessible components)
+- Radix UI (underlying component library)
+- Lucide React 0.462.0 (icons)
+
+STYLING:
+- Tailwind CSS 3.4.17 (utility-first styling)
+- Tailwindcss-animate 1.0.7 (animation utilities)
+- Tailwind-merge 2.6.0 (class merging)
+- PostCSS 8.5.6 (CSS processing)
+- Autoprefixer 10.4.21 (browser prefixes)
+
+ANIMATIONS & INTERACTIONS:
+- Framer Motion 12.23.26 (advanced animations)
+- Embla Carousel 8.6.0 (carousel component)
+- Vaul 0.9.9 (drawer/modal component)
+- Sonner 1.7.4 (toast notifications)
+
+UTILITIES:
+- Date-fns 3.6.0 (date manipulation)
+- Class Variance Authority 0.7.1 (component variants)
+- CLSX 2.1.1 (className utilities)
+- Next-themes 0.3.0 (theme management)
+
+VISUALIZATION:
+- Recharts 2.15.4 (charts & data visualization)
+- React Day Picker 8.10.1 (date picker)
+
+DEVELOPMENT:
+- @vitejs/plugin-react-swc (SWC transpilation)
+- ESLint 9.32.0 (linting)
+- Lovable-tagger 1.1.13 (component tracking)
+
+PACKAGE MANAGER:
+- NPM / Bun (bun.lockb present)
+
+================================================================================
+5. EXISTING COMPONENTS - COMPLETE LIST
+================================================================================
+
+CORE UI COMPONENTS (shadcn/ui):
+accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb,
+button, calendar, card, carousel, chart, checkbox, collapsible, command,
+context-menu, dialog, drawer, dropdown-menu, form, hover-card, input,
+input-otp, label, menubar, navigation-menu, pagination, popover, progress,
+radio-group, resizable, scroll-area, select, separator, sheet, sidebar,
+skeleton, slider, sonner, switch, table, tabs, textarea, toast, toaster,
+toggle, toggle-group, tooltip
+
+CUSTOM CORE COMPONENTS:
+- AutocompleteInput - Autocomplete search input with suggestions
+- FacetRating - Multi-facet rating system (mood, energy, etc.)
+- FloatingParticles - Animated background particles effect
+- GemBadge - Badge displaying gem status
+- GemIcon - Main application gem icon
+- MapVisual - Geographic/cluster map visualization
+- NavLink - Navigation link wrapper
+- PaginationDots - Carousel page dots
+- StarRating - 5-star rating display
+- TasteMapVisual - 2D taste profile visualization
+- ThemeColorPicker - Dynamic theme color selection
+
+TAB COMPONENTS:
+- HomeTab - Dashboard with recent activity, highlights
+- TreasureChestTab - Main gem collection display (skeuomorphic chest)
+- ProfileTab - User profile, stats, personal info
+- CollectTab - Alternative collection interface
+- EventsTab - Event listing and filtering
+- TasteMapTab - Musical taste profile visualization
+
+TREASURE CHEST COMPONENTS:
+- AddEventModal - Modal for adding DJ performance/event
+- AddGemModal - Modal for adding gem to collection
+- ClusterViewModal - Modal showing clustered gems
+- CollectionModeChooser - Selector for collection method (memory/festival)
+- CrystalGem - Individual gem visual display
+- EnamelPin - Festival enamel pin display
+- FestivalLineupModal - Festival lineup selection modal
+- GemCluster - Group/cluster of gems
+- GemDNADisplay - Shows gem properties/attributes
+- GemDetailModal - Detailed gem information modal
+- GemMiningAnimation - Mining animation sequence
+- GlassShelf - Display shelf for gems
+- QuestCompleteAnimation - Goal completion animation
+- RarityBreakdown - Statistics on gem rarity distribution
+- RecentEventCard - Card displaying recent event
+
+ACHIEVEMENT COMPONENTS:
+- AchievementPin - Individual achievement pin display
+- AchievementProgress - Achievement progress bar/tracker
+- GenesisTag - Special genesis/origin tag
+- TrophyCase - Collection of achievements display
+
+GOAL COMPONENTS:
+- AddGoalModal - Modal for creating new goal
+- CountdownTimer - Countdown to goal deadline
+- GhostGem - Placeholder/ghost gem for incomplete goals
+- GoalsList - List of user goals with progress
+
+ICON COMPONENTS:
+- TreasureChestIcon - Custom treasure chest SVG icon
+
+================================================================================
+6. PAGES & ROUTES
+================================================================================
+
+ROUTING STRUCTURE (React Router v6):
+
+/ (Index)
+  - Route guard that redirects based on auth state
+  - If user exists → /app
+  - If onboarded → /auth
+  - Otherwise → /onboarding
+
+/onboarding (Onboarding)
+  - First-time user flow
+  - Introduces app features and gamification
+
+/auth (Auth)
+  - Authentication page (login/signup)
+  - Supports social auth (Google, Apple based on metadata)
+
+/app (AppShell)
+  - Main application container
+  - Tab-based navigation (Home, Treasure Chest, Profile)
+  - Floating "Mine a Gem" button (pickaxe icon)
+  - Sticky header with GemList branding and settings button
+  - Bottom tab bar for navigation
+  - Fixed action button for adding gems/mining
+
+/settings (SettingsPage)
+  - User settings and preferences
+  - Theme customization
+  - Profile management
+
+/artists (ArtistsPortal)
+  - Portal for DJs/artists
+  - Manage performances
+  - View listener engagement
+
+/* (NotFound)
+  - 404 error page
+
+================================================================================
+7. README CONTENT
+================================================================================
+
+PROJECT INFO:
+- URL: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+- Note: Generic Lovable boilerplate, real project ID not filled in
+
+EDITING OPTIONS:
+1. Use Lovable web IDE
+2. Use local IDE with Node.js & npm
+3. Edit directly on GitHub
+4. Use GitHub Codespaces
+
+TECH STACK:
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+SETUP INSTRUCTIONS:
+1. git clone <repo-url>
+2. cd <project-dir>
+3. npm i
+4. npm run dev
+
+BUILD:
+- npm run build (production)
+- npm run build:dev (development)
+
+DEPLOYMENT:
+- Via Lovable: Click Share → Publish
+- Custom domain support: Project > Settings > Domains
+
+================================================================================
+8. KEY CONFIG FILES
+================================================================================
+
+TAILWIND CONFIG (tailwind.config.ts):
+- Dark mode enabled (class-based)
+- Custom color variables for gem colors and app theme
+- Extended animations: float, pulse-glow, spin-slow
+- Custom box shadows: neon, neon-lg, glass
+- Font family: Space Grotesk
+- Custom keyframes for animations
+
+VITE CONFIG (vite.config.ts):
+- Host: ::
+- Port: 8080
+- React SWC transpilation
+- Component tagger plugin (Lovable)
+- @ alias for src directory
+
+TSCONFIG:
+- Target: ES2020
+- Module resolution: bundler
+- Strict type checking enabled
+- JSX factory setup for React
+
+COMPONENT CONFIG (components.json):
+- shadcn/ui configuration
+- TailwindCSS styling
+- TypeScript support
+- tsconfig path aliases
+
+POSTCSS CONFIG (postcss.config.js):
+- Tailwind CSS
+- Autoprefixer
+
+HTML (index.html):
+- Viewport meta for mobile
+- Theme color: #122017 (dark green)
+- OG tags for social sharing
+- Space Grotesk font preload
+- Mobile-optimized (max-scale=1.0)
+
+ENVIRONMENT (.env):
+- Contains Supabase credentials
+- Project-specific configuration
+
+================================================================================
+9. STYLING & DESIGN SYSTEM
+================================================================================
+
+COLOR PALETTE:
+Primary (Green):     hsl(145 75% 55%)
+Secondary (Purple):  hsl(280 95% 50%)
+Accent (Pink):       hsl(330 85% 60%)
+Destructive (Red):   hsl(0 84% 60%)
+Gem Colors:
+  - Green:    hsl(145 75% 55%)
+  - Purple:   hsl(280 95% 50%)
+  - Pink:     hsl(330 85% 60%)
+  - Blue:     hsl(217 91% 60%)
+  - Ruby:     hsl(0 85% 55%)
+  - Amber:    hsl(38 92% 50%)
+  - Emerald:  hsl(160 84% 45%)
+  - Sapphire: hsl(220 90% 60%)
+  - Amethyst: hsl(280 70% 55%)
+
+Background:  hsl(150 40% 8%) with cosmic gradient
+Foreground:  hsl(150 20% 95%)
+Card:        hsl(150 30% 12%)
+
+TYPOGRAPHY:
+Font: Space Grotesk (Google Fonts)
+Weights: 300, 400, 500, 600, 700
+
+KEY DESIGN CLASSES:
+- .glass-card - Frosted glass effect with backdrop blur
+- .glass-button - Subtle glass button style
+- .neon-text - Glowing text effect
+- .wood-grain - Wooden texture (CSS gradient)
+- .chest-* - Treasure chest styling (lid, body, hinge, lock, etc.)
+- .particle - Floating animation
+- .animate-float - Floating keyframe animation
+- .animate-pulse-glow - Pulsing glow effect
+
+ANIMATIONS:
+- float - 6s infinite, Y translation and rotation
+- pulse-glow - 2s infinite opacity/shadow pulse
+- spin-slow - 20s infinite rotation
+- accordion-down/up - Quick expand/collapse
+- shimmer - 2s infinite gradient sweep
+- fade-in - 0.5s entry animation
+- scale-in - 0.3s scale entry animation
+
+SHADOWS:
+- neon: 0 0 20px primary / 0.4
+- glass: 0 8px 32px primary / 0.1, inset highlights
+- Wood details: various inset shadows for 3D effect
+
+================================================================================
+10. NOTABLE FEATURES & PATTERNS
+================================================================================
+
+AUTHENTICATION:
+- Supabase authentication with social providers
+- Google & Apple OAuth support (via user metadata)
+- Mock mode for development/testing
+- User profiles with avatar URLs
+- Email-based fallback
+
+GEM SYSTEM:
+- Gems represent favorite DJ sets/performances
+- Each gem has properties (rarity, color, attributes)
+- Gems can be collected individually or from festival lineups
+- Gems have DNA (genetic properties)
+- Rarity calculation based on multiple factors
+
+GAMIFICATION:
+- Achievements and trophy case
+- Goals/quests with countdowns
+- Progress tracking
+- Enamel pin collectibles
+
+TASTE MAPPING:
+- 2D visualization of musical taste
+- Facet-based rating system (mood, energy, etc.)
+- Event-based collections
+- Geographic distribution tracking
+
+DATA PERSISTENCE:
+- Supabase PostgreSQL backend
+- TypeScript types from DB schema
+- React Query for caching/synchronization
+- Local storage for preferences
+
+ANIMATIONS:
+- Smooth page transitions
+- Gem mining animation sequence
+- Quest completion celebration
+- Floating particles background effect
+- Glass morphism hover states
+
+MOBILE-FIRST DESIGN:
+- Max width 420px container (mobile phone aspect ratio)
+- Bottom tab navigation
+- Floating action buttons
+- Responsive touch-friendly interface
+
+================================================================================
+11. KEY INTEGRATION POINTS
+================================================================================
+
+SUPABASE:
+- Backend database (PostgreSQL)
+- Authentication system
+- Real-time subscriptions support
+- File storage for avatars/assets
+
+EXTERNAL APIS:
+- Festival/event data
+- DJ performance information
+- Location services
+- Geographic clustering
+
+THEME SYSTEM:
+- Dynamic color selection
+- Persistent theme storage
+- CSS variable-based implementation
+- Dark-only mode (no light mode)
+
+================================================================================
+12. DEVELOPMENT PATTERNS
+================================================================================
+
+STATE MANAGEMENT:
+- Custom hooks for data fetching (useGemData, useUserGoals, etc.)
+- React Query for server state
+- Context API for auth
+- localStorage for preferences
+
+COMPONENT PATTERNS:
+- Functional components with hooks
+- Shadcn/ui for base components
+- Custom wrapper components for styling
+- Controlled modals with open/onOpenChange props
+
+FORM HANDLING:
+- React Hook Form with Zod validation
+- Form component wrapper from shadcn/ui
+- Field-level validation
+
+TYPE SAFETY:
+- Full TypeScript coverage
+- Supabase type generation
+- Zod schema validation
+- Type-safe routing via React Router v6
+
+STYLING APPROACH:
+- Tailwind CSS utilities
+- CSS modules for specific animations
+- CSS variables for theming
+- Layered CSS (@layer base, components, utilities)
+
+================================================================================
+END OF SUMMARY
+================================================================================
