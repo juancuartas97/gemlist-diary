@@ -10,6 +10,7 @@ import { TasteMapTab } from '@/components/tabs/TasteMapTab';
 import { ProfileTab } from '@/components/tabs/ProfileTab';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import { FestivalLineupModal } from '@/components/treasure/FestivalLineupModal';
+import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { Pickaxe } from 'lucide-react';
@@ -25,8 +26,10 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 
 const AppShell = () => {
   const [activeTab, setActiveTab]             = useState<Tab>('home');
+  const [showModeChooser, setShowModeChooser] = useState(false);
   const [showAddGemModal, setShowAddGemModal]   = useState(false);
   const [showFestivalModal, setShowFestivalModal] = useState(false);
+  const [collectionMode, setCollectionMode] = useState<CollectionMode>('memory');
 
   // Draggable FAB — snaps to left or right edge
   const [fabOnRight, setFabOnRight]   = useState(true);
@@ -67,7 +70,7 @@ const AppShell = () => {
         <main className="flex-1 overflow-y-auto pb-[5.5rem]">
           {activeTab === 'home'     && (
             <HomeTab
-              onMine={() => setShowAddGemModal(true)}
+              onMine={() => setShowModeChooser(true)}
               onVibePress={() => setActiveTab('map')}
             />
           )}
@@ -117,7 +120,7 @@ const AppShell = () => {
               setFabOnRight(e.clientX > window.innerWidth / 2);
             } else {
               // Normal tap
-              setShowAddGemModal(true);
+              setShowModeChooser(true);
             }
           }}
         >
@@ -173,10 +176,24 @@ const AppShell = () => {
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────── */}
+      <CollectionModeChooser
+        open={showModeChooser}
+        onSelect={(mode) => {
+          setCollectionMode(mode);
+          setShowModeChooser(false);
+          if (mode === 'festival') {
+            setShowFestivalModal(true);
+          } else {
+            setShowAddGemModal(true);
+          }
+        }}
+        onClose={() => setShowModeChooser(false)}
+      />
       <AddGemModal
         open={showAddGemModal}
         onOpenChange={setShowAddGemModal}
         onGemAdded={() => {}}
+        mode={collectionMode}
       />
       <FestivalLineupModal
         open={showFestivalModal}

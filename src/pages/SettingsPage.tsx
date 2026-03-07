@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, LogOut, Bell, Shield, User, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,10 +12,16 @@ import { FloatingParticles } from '@/components/FloatingParticles';
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, signOut, refreshProfile, loading, isMockMode } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!loading && !user && !isMockMode) {
+      navigate('/auth');
+    }
+  }, [loading, user, isMockMode, navigate]);
 
   const handleBack = () => {
     navigate('/app');
@@ -90,6 +96,14 @@ const SettingsPage = () => {
   // Get avatar URL - prioritize profile avatar, then user metadata (Google/Apple)
   const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
   const firstName = profile?.display_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Raver';
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user && !isMockMode) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-cosmic relative">

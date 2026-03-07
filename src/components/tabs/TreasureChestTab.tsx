@@ -7,6 +7,7 @@ import { useTargetEvents, useDeleteGoal } from '@/hooks/useUserGoals';
 import { EnamelPin, type FestivalBadge } from '@/components/treasure/EnamelPin';
 import { AddGemModal } from '@/components/treasure/AddGemModal';
 import { FestivalLineupModal } from '@/components/treasure/FestivalLineupModal';
+import { CollectionModeChooser, type CollectionMode } from '@/components/treasure/CollectionModeChooser';
 import { GemDetailModal } from '@/components/treasure/GemDetailModal';
 import { ClusterViewModal } from '@/components/treasure/ClusterViewModal';
 import { GhostGem } from '@/components/goals/GhostGem';
@@ -232,8 +233,10 @@ export const TreasureChestTab = () => {
   const deleteGoal = useDeleteGoal();
 
   // Modal / mode state
+  const [showModeChooser, setShowModeChooser]   = useState(false);
   const [showAddModal, setShowAddModal]         = useState(false);
   const [showFestivalModal, setShowFestivalModal] = useState(false);
+  const [collectionMode, setCollectionMode]     = useState<CollectionMode>('memory');
   const [selectedGem, setSelectedGem]           = useState<UserGem | null>(null);
   const [showDetailModal, setShowDetailModal]   = useState(false);
   const [selectedCluster, setSelectedCluster]   = useState<UserGem[]>([]);
@@ -500,7 +503,7 @@ export const TreasureChestTab = () => {
               ))}
             </div>
           ) : gems.length === 0 ? (
-            <ChestEmptyState onMine={() => setShowAddModal(true)} />
+            <ChestEmptyState onMine={() => setShowModeChooser(true)} />
           ) : collectionItems.length === 0 && hasActiveFilters ? (
             /* No results for active filter */
             <div className="flex flex-col items-center py-12 text-center">
@@ -532,10 +535,24 @@ export const TreasureChestTab = () => {
         </div>
 
       {/* ── Modals ────────────────────────────────────────────────── */}
+      <CollectionModeChooser
+        open={showModeChooser}
+        onSelect={(mode) => {
+          setCollectionMode(mode);
+          setShowModeChooser(false);
+          if (mode === 'festival') {
+            setShowFestivalModal(true);
+          } else {
+            setShowAddModal(true);
+          }
+        }}
+        onClose={() => setShowModeChooser(false)}
+      />
       <AddGemModal
         open={showAddModal}
         onOpenChange={setShowAddModal}
         onGemAdded={handleGemAdded}
+        mode={collectionMode}
       />
 
       <FestivalLineupModal
