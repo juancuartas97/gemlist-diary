@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Pickaxe, SlidersHorizontal, ArrowUpDown, X, ChevronDown, ChevronUp, Gem, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUserGems, groupGemsByDJ, type UserGem } from '@/hooks/useGemData';
@@ -250,31 +250,38 @@ export const TreasureChestTab = () => {
   // Festival badges from Supabase
   const [userBadges, setUserBadges] = useState<FestivalBadge[]>([]);
 
-  useEffect(() => {
-    if (!user?.id) return;
-    supabase
+  const fetchUserBadges = useCallback(async () => {
+    if (!user?.id) {
+      setUserBadges([]);
+      return;
+    }
+
+    const { data } = await supabase
       .from('user_festival_badges')
       .select('*')
       .eq('user_id', user.id)
-      .order('festival_date', { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          setUserBadges(
-            data.map((b: {
-              series_name: string;
-              festival_date: string;
-              badge_color: string;
-              custom_image_url: string | null;
-            }) => ({
-              name:  b.series_name,
-              date:  new Date(b.festival_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-              color: (b.badge_color || 'purple') as FestivalBadge['color'],
-              image: b.custom_image_url || undefined,
-            }))
-          );
-        }
-      });
+      .order('festival_date', { ascending: false });
+
+    if (data) {
+      setUserBadges(
+        data.map((b: {
+          series_name: string;
+          festival_date: string;
+          badge_color: string;
+          custom_image_url: string | null;
+        }) => ({
+          name: b.series_name,
+          date: new Date(b.festival_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+          color: (b.badge_color || 'purple') as FestivalBadge['color'],
+          image: b.custom_image_url || undefined,
+        }))
+      );
+    }
   }, [user?.id]);
+
+  useEffect(() => {
+    void fetchUserBadges();
+  }, [fetchUserBadges]);
 
   // ── Derived filter options ─────────────────────────────────────────────
 
@@ -346,7 +353,10 @@ export const TreasureChestTab = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────
 
-  const handleGemAdded     = () => refetch();
+  const handleGemAdded     = () => {
+    void refetch();
+    void fetchUserBadges();
+  };
   const handleGemClick     = (gem: UserGem) => { setSelectedGem(gem); setShowDetailModal(true); };
   const handleClusterClick = (clusterGems: UserGem[]) => { setSelectedCluster(clusterGems); setShowClusterModal(true); };
   const handleClusterGemClick = (gem: UserGem) => { setShowClusterModal(false); setSelectedGem(gem); setShowDetailModal(true); };
@@ -552,4 +562,3 @@ export const TreasureChestTab = () => {
     </div>
   );
 };
-

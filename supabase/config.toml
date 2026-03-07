@@ -4,7 +4,7 @@ project_id = "olrzvyswlkvkbdkavmdy"
 verify_jwt = false
 
 [functions.parse-festival-lineup]
-verify_jwt = false
+verify_jwt = true
 
 [functions.enrich-artist]
-verify_jwt = false
+verify_jwt = true

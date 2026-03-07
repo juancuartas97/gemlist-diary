@@ -7,8 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AutocompleteInput } from '@/components/AutocompleteInput';
 import { useAuth } from '@/hooks/useAuth';
-import { useGenres, addDJ, type Genre, type DJ } from '@/hooks/useGemData';
-import { useEventSeriesSearch, type EventSeries } from '@/hooks/useEventSeries';
+import { useGenres, addDJ, addUserGem, type Genre, type DJ } from '@/hooks/useGemData';
+import {
+  useEventSeriesSearch,
+  getEditionForYear,
+  addEventSeries,
+  addEventEdition,
+  type EventSeries,
+  type EventEdition,
+} from '@/hooks/useEventSeries';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -18,6 +25,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface FestivalLineupModalProps {
   open: boolean;
@@ -33,6 +47,7 @@ interface EnrichedArtist {
   confidence: string;
   matchedDJ: DJ | null;
   matchedGenre: Genre | null;
+  resolvedGenreId: string | null;
   enriching: boolean;
   enriched: boolean;
   selected: boolean;
@@ -84,6 +99,11 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
   }, [open]);
 
   const festivalName = selectedSeries?.name || manualName;
+  const normalizedFestivalName = festivalName.trim().toLowerCase();
+  const resolveGenreByName = useCallback((genreName: string) => {
+    const normalizedGenreName = genreName.trim().toLowerCase();
+    return genres.find((genre) => genre.name.trim().toLowerCase() === normalizedGenreName) || null;
+  }, [genres]);
 
   // Step 1 helpers
   const handleSeriesSelect = (option: { id: string; label: string }) => {
@@ -171,6 +191,7 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
           confidence: matchedDJ ? 'matched' : 'pending',
           matchedDJ: matchedDJ || null,
           matchedGenre: matchedGenre || null,
+          resolvedGenreId: matchedDJ?.primary_genre_id || matchedGenre?.id || null,
           enriching: false,
           enriched: !!matchedDJ,
           selected: true,
@@ -208,9 +229,7 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
 
         if (!error && data) {
           // Match genre from genres table
-          const matchedGenre = genres.find(
-            g => g.name.toLowerCase() === (data.genre || '').toLowerCase()
-          ) || null;
+          const matchedGenre = resolveGenreByName(data.genre || '');
 
           setArtists(prev => prev.map((a, j) =>
             j === idx
@@ -221,6 +240,7 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
                   home_city: data.home_city || null,
                   confidence: data.confidence || 'low',
                   matchedGenre,
+                  resolvedGenreId: matchedGenre?.id || null,
                   enriching: false,
                   enriched: true,
                 }
@@ -242,7 +262,27 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
         await new Promise(r => setTimeout(r, 300));
       }
     }
-  }, [genres]);
+  }, [resolveGenreByName]);
+
+  const setArtistGenre = (idx: number, genreId: string) => {
+    const matchedGenre = genres.find((genre) => genre.id === genreId) || null;
+    setArtists((prev) => prev.map((artist, index) => (
+      index === idx
+        ? {
+            ...artist,
+            matchedGenre,
+            resolvedGenreId: genreId,
+            genre: matchedGenre?.name || artist.genre,
+          }
+        : artist
+    )));
+  };
+
+  const getArtistGenreId = (artist: EnrichedArtist) => (
+    artist.matchedDJ?.primary_genre_id ||
+    artist.matchedGenre?.id ||
+    artist.resolvedGenreId
+  );
 
   // Step 3 helpers
   const toggleArtist = (idx: number) => {
@@ -254,7 +294,54 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
     setArtists(prev => prev.map(a => ({ ...a, selected: !allSelected })));
   };
 
-  const selectedCount = artists.filter(a => a.selected).length;
+  const selectedArtists = artists.filter((artist) => artist.selected);
+  const selectedCount = selectedArtists.length;
+  const selectedArtistsStillEnriching = selectedArtists.some((artist) => artist.enriching);
+  const unresolvedSelectedArtists = selectedArtists.filter((artist) => !getArtistGenreId(artist));
+
+  const resolveFestivalEdition = useCallback(async (): Promise<EventEdition | null> => {
+    const trimmedFestivalName = festivalName.trim();
+    if (!trimmedFestivalName) return null;
+
+    const editionYear = new Date(`${festivalDate}T00:00:00`).getFullYear();
+    let series = selectedSeries;
+
+    if (!series) {
+      const { data } = await supabase
+        .from('event_series')
+        .select(`
+          *,
+          default_venue:venues(*),
+          genre:genres(*)
+        `)
+        .ilike('name', trimmedFestivalName);
+
+      const existingSeries = (data as EventSeries[] | null)?.find(
+        (item) => item.name.trim().toLowerCase() === normalizedFestivalName
+      );
+
+      if (existingSeries) {
+        series = existingSeries;
+      } else {
+        series = await addEventSeries({
+          name: trimmedFestivalName,
+          first_year: editionYear,
+        });
+      }
+    }
+
+    if (!series) return null;
+
+    const existingEdition = await getEditionForYear(series.id, editionYear);
+    if (existingEdition) return existingEdition;
+
+    return addEventEdition({
+      series_id: series.id,
+      year: editionYear,
+      start_date: festivalDate,
+      end_date: festivalDate,
+    });
+  }, [festivalDate, festivalName, normalizedFestivalName, selectedSeries]);
 
   // Step 4 – Submit
   const handleSubmit = async () => {
@@ -263,76 +350,79 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
       return;
     }
 
-    const selected = artists.filter(a => a.selected);
-    if (selected.length === 0) {
+    if (selectedCount === 0) {
       toast.error('Select at least one artist');
+      return;
+    }
+
+    if (selectedArtistsStillEnriching) {
+      toast.error('Wait for artist enrichment to finish before continuing');
+      setStep('select');
+      return;
+    }
+
+    if (unresolvedSelectedArtists.length > 0) {
+      toast.error('Select a genre for each new artist before collecting gems');
+      setStep('select');
       return;
     }
 
     setSubmitting(true);
 
     try {
+      const edition = await resolveFestivalEdition();
+      if (!edition) {
+        throw new Error('Unable to resolve festival edition');
+      }
+
       const createdGems: string[] = [];
 
-      for (const artist of selected) {
+      for (const artist of selectedArtists) {
         let dj = artist.matchedDJ;
+        const genreId = getArtistGenreId(artist);
+
+        if (!genreId) {
+          throw new Error(`Missing genre for ${artist.stage_name}`);
+        }
 
         if (!dj) {
-          // Find or create genre
-          let genreId: string | undefined;
-          if (artist.matchedGenre) {
-            genreId = artist.matchedGenre.id;
-          } else if (artist.genre) {
-            const found = genres.find(g => g.name.toLowerCase() === artist.genre.toLowerCase());
-            genreId = found?.id;
-          }
-          // Fall back to first genre if none matched
-          if (!genreId && genres.length > 0) {
-            genreId = genres[0].id;
-          }
-
-          if (genreId) {
-            dj = await addDJ(artist.stage_name, genreId);
-          }
+          dj = await addDJ(artist.stage_name, genreId);
         }
 
         if (!dj) continue;
 
-        const genreId = dj.primary_genre_id || (genres.length > 0 ? genres[0].id : null);
-        if (!genreId) continue;
+        const gem = await addUserGem({
+          user_id: user.id,
+          dj_id: dj.id,
+          primary_genre_id: genreId,
+          event_date: festivalDate,
+          edition_id: edition.id,
+          facet_ratings: { sound_quality: null, energy: null, performance: null, crowd: null },
+        });
 
-        // Insert gem (rarity will be calculated by DB trigger if applicable)
-        const { data: gem, error } = await supabase
-          .from('user_gems')
-          .insert({
-            user_id: user.id,
-            dj_id: dj.id,
-            primary_genre_id: genreId,
-            event_date: festivalDate,
-            is_rated: false,
-            facet_ratings: { sound_quality: null, energy: null, performance: null, crowd: null },
-          })
-          .select('id')
-          .single();
-
-        if (!error && gem) {
+        if (gem) {
           createdGems.push(gem.id);
         }
       }
 
-      // Create festival badge
-      if (createdGems.length > 0) {
-        const badgeColors = ['purple', 'gold', 'blue', 'green', 'red', 'silver'];
-        const badgeColor = badgeColors[Math.floor(Math.random() * badgeColors.length)];
+      if (createdGems.length === 0) {
+        throw new Error('Unable to create gems for the selected artists');
+      }
 
-        await supabase.from('user_festival_badges').insert({
-          user_id: user.id,
-          edition_id: null,
-          series_name: festivalName,
-          festival_date: festivalDate,
-          badge_color: badgeColor,
-          artist_count: createdGems.length,
-        });
+      const badgeColors = ['purple', 'gold', 'blue', 'green', 'red', 'silver'];
+      const badgeColor = badgeColors[Math.floor(Math.random() * badgeColors.length)];
+
+      const { error: badgeError } = await supabase.from('user_festival_badges').insert({
+        user_id: user.id,
+        edition_id: edition.id,
+        series_name: festivalName.trim(),
+        festival_date: festivalDate,
+        badge_color: badgeColor,
+        artist_count: createdGems.length,
+      });
+
+      if (badgeError) {
+        throw badgeError;
       }
 
       toast.success(`Added ${createdGems.length} gems + 1 festival badge!`);
@@ -532,62 +622,98 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
 
             <div className="max-h-[45vh] overflow-y-auto space-y-1.5 -mx-1 px-1">
               {artists.map((artist, idx) => (
-                <button
+                <div
                   key={artist.originalName + idx}
-                  onClick={() => toggleArtist(idx)}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all",
-                    "border border-border/20",
+                    "rounded-xl border border-border/20 transition-all",
                     artist.selected
                       ? "bg-violet-500/10 border-violet-500/30"
                       : "bg-background/30 hover:bg-background/50"
                   )}
                 >
-                  {/* Checkbox */}
-                  {artist.selected ? (
-                    <CheckSquare className="w-4 h-4 text-violet-400 shrink-0" />
-                  ) : (
-                    <Square className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                  <button
+                    type="button"
+                    onClick={() => toggleArtist(idx)}
+                    className="w-full flex items-center gap-3 p-3 text-left"
+                  >
+                    {artist.selected ? (
+                      <CheckSquare className="w-4 h-4 text-violet-400 shrink-0" />
+                    ) : (
+                      <Square className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                    )}
+
+                    <div
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: artist.matchedGenre?.color_hex || '#6B7280',
+                      }}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-foreground truncate">
+                        {artist.stage_name}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                        {artist.enriching ? (
+                          <span className="flex items-center gap-1 text-violet-400">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Enriching...
+                          </span>
+                        ) : (
+                          <>
+                            {artist.genre && <span>{artist.genre}</span>}
+                            {artist.matchedDJ && (
+                              <span className="text-emerald-400 flex items-center gap-0.5">
+                                <Check className="w-3 h-3" />
+                                Matched
+                              </span>
+                            )}
+                            {!artist.matchedDJ && artist.enriched && (
+                              <span className="text-amber-400">New</span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+
+                  {artist.selected && !artist.enriching && !getArtistGenreId(artist) && (
+                    <div className="px-3 pb-3">
+                      <p className="mb-2 text-[11px] text-amber-300/80">
+                        Confirm a genre for this artist before importing.
+                      </p>
+                      <Select
+                        value={artist.resolvedGenreId || ''}
+                        onValueChange={(value) => setArtistGenre(idx, value)}
+                      >
+                        <SelectTrigger className="bg-background/50 border-border/30">
+                          <SelectValue placeholder={artist.genre ? `Suggested: ${artist.genre}` : 'Select a genre'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {genres.map((genre) => (
+                            <SelectItem key={genre.id} value={genre.id}>
+                              {genre.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   )}
-
-                  {/* Genre color dot */}
-                  <div
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{
-                      backgroundColor: artist.matchedGenre?.color_hex || '#6B7280',
-                    }}
-                  />
-
-                  {/* Artist info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">
-                      {artist.stage_name}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                      {artist.enriching ? (
-                        <span className="flex items-center gap-1 text-violet-400">
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          Enriching...
-                        </span>
-                      ) : (
-                        <>
-                          {artist.genre && <span>{artist.genre}</span>}
-                          {artist.matchedDJ && (
-                            <span className="text-emerald-400 flex items-center gap-0.5">
-                              <Check className="w-3 h-3" />
-                              Matched
-                            </span>
-                          )}
-                          {!artist.matchedDJ && artist.enriched && (
-                            <span className="text-amber-400">New</span>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </button>
+                </div>
               ))}
             </div>
+
+            {selectedArtistsStillEnriching && (
+              <p className="text-[11px] text-muted-foreground">
+                Wait for AI enrichment to finish before continuing.
+              </p>
+            )}
+
+            {unresolvedSelectedArtists.length > 0 && (
+              <p className="text-[11px] text-amber-300/80">
+                Choose a genre for each new artist before reviewing the import.
+              </p>
+            )}
 
             <div className="flex gap-3 pt-2">
               <Button variant="ghost" onClick={() => setStep('lineup')} className="flex-1">
@@ -597,7 +723,7 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
               <Button
                 variant="neon"
                 className="flex-1"
-                disabled={selectedCount === 0}
+                disabled={selectedCount === 0 || selectedArtistsStillEnriching || unresolvedSelectedArtists.length > 0}
                 onClick={() => setStep('confirm')}
               >
                 Review
@@ -649,7 +775,10 @@ export const FestivalLineupModal = ({ open, onOpenChange, onGemsAdded }: Festiva
                 <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground py-1">
                   <div
                     className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: artist.matchedGenre?.color_hex || '#6B7280' }}
+                    style={{
+                      backgroundColor:
+                        genres.find((genre) => genre.id === getArtistGenreId(artist))?.color_hex || '#6B7280',
+                    }}
                   />
                   <span className="truncate">{artist.stage_name}</span>
                   {artist.matchedDJ && (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Music, Search, Star, MapPin } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,12 @@ const ArtistsPortal = () => {
   const { user, loading: authLoading, isMockMode } = useAuth();
   const { gems, loading: gemsLoading } = useUserGems(user?.id);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && !user && !isMockMode) {
+      navigate('/auth');
+    }
+  }, [authLoading, user, isMockMode, navigate]);
 
   const artists = useMemo(() => {
     const grouped = groupGemsByDJ(gems);
@@ -115,6 +121,10 @@ const ArtistsPortal = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user && !isMockMode) {
+    return null;
   }
 
   return (
