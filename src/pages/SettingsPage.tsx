@@ -63,8 +63,8 @@ const SettingsPage = () => {
 
       refreshProfile?.();
       toast.success('Profile photo updated!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload photo');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload photo');
     } finally {
       setIsUploading(false);
     }
@@ -82,8 +82,8 @@ const SettingsPage = () => {
       if (error) throw error;
       refreshProfile?.();
       toast.success('Display name updated!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update name');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update name');
     }
   };
 
