@@ -1,0 +1,183 @@
+.gem-mining-overlay {
+  perspective: 900px;
+}
+
+.mining-scene {
+  position: relative;
+  width: 12rem;
+  height: 12rem;
+}
+
+.rock-shell {
+  filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.45));
+  transform-origin: center;
+}
+
+.rock-shell-impact {
+  animation: rock-impact 380ms cubic-bezier(.22,.61,.36,1);
+}
+
+.pickaxe {
+  position: absolute;
+  width: 8.5rem;
+  height: 8.5rem;
+  right: -1.6rem;
+  top: -0.8rem;
+  transform-origin: 22% 78%;
+}
+
+.pickaxe-strike {
+  animation: pickaxe-strike var(--strike-duration, 560ms) cubic-bezier(.25,.8,.25,1) forwards;
+}
+
+.impact-flash {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 3.8rem;
+  height: 3.8rem;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255,248,200,0.78) 0%, rgba(255,194,90,0.28) 35%, transparent 72%);
+  animation: impact-flash 360ms ease-out forwards;
+}
+
+.debris-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.debris {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+}
+
+.debris-chip {
+  width: 0.32rem;
+  height: 0.32rem;
+  background: hsl(var(--muted-foreground) / 0.8);
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+  animation: chip-fly var(--life, 900ms) linear forwards;
+}
+
+.debris-dust {
+  width: 0.22rem;
+  height: 0.22rem;
+  background: hsl(var(--muted-foreground) / 0.45);
+  border-radius: 999px;
+  filter: blur(0.6px);
+  animation: dust-float var(--life, 1100ms) ease-out forwards;
+}
+
+.debris-spark {
+  width: 0.14rem;
+  height: 0.86rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 247, 180, 0.95) 0%, rgba(255, 180, 70, 0.18) 100%);
+  box-shadow: 0 0 10px rgba(255, 194, 92, 0.8);
+  animation: spark-fly var(--life, 420ms) ease-out forwards;
+}
+
+.reveal-gem-wrap {
+  width: 12rem;
+  height: 12rem;
+  margin-inline: auto;
+  transform-style: preserve-3d;
+  animation: gem-tilt 4.8s ease-in-out infinite;
+}
+
+.reveal-core-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  filter: blur(10px);
+  animation: glow-breathe var(--glow-duration, 1900ms) ease-in-out infinite;
+}
+
+.reveal-caustics {
+  position: absolute;
+  inset: -10%;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.18) 18%, transparent 30%, rgba(255,255,255,0.1) 52%, transparent 66%, rgba(255,255,255,0.12) 88%, transparent 100%);
+  mix-blend-mode: screen;
+  border-radius: 50%;
+  animation: caustic-spin 5s linear infinite;
+  opacity: 0.45;
+}
+
+.rarity-total-pop {
+  animation: total-pop 420ms cubic-bezier(.2,.9,.2,1);
+}
+
+@keyframes pickaxe-strike {
+  0% { transform: rotate(18deg) translate3d(0,0,0); }
+  30% { transform: rotate(-42deg) translate3d(-1px, 1px, 0); }
+  38% { transform: rotate(-14deg) translate3d(2px, 2px, 0); }
+  58% { transform: rotate(6deg) translate3d(-1px, 0, 0); }
+  100% { transform: rotate(14deg) translate3d(0,0,0); }
+}
+
+@keyframes rock-impact {
+  0% { transform: translate3d(0,0,0) rotate(0deg); }
+  20% { transform: translate3d(2px,-1px,0) rotate(0.3deg); }
+  45% { transform: translate3d(-3px,1px,0) rotate(-0.4deg); }
+  75% { transform: translate3d(1px,-1px,0) rotate(0.15deg); }
+  100% { transform: translate3d(0,0,0) rotate(0deg); }
+}
+
+@keyframes impact-flash {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.5); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
+}
+
+@keyframes chip-fly {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) rotate(var(--rot)) translateY(0) scale(1); }
+  70% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) translateY(calc(var(--distance) * -1)) translateX(var(--drift)) scale(0.25); }
+}
+
+@keyframes dust-float {
+  0% { opacity: 0.5; transform: translate(-50%, -50%) rotate(var(--rot)) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) translateY(calc(var(--distance) * -0.65)) translateX(var(--drift)) scale(1.4); }
+}
+
+@keyframes spark-fly {
+  0% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rot)) translateY(0) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) translateY(calc(var(--distance) * -1.2)) scaleY(0.35); }
+}
+
+@keyframes gem-tilt {
+  0%, 100% { transform: rotateX(0deg) rotateY(-7deg) rotateZ(0deg); }
+  50% { transform: rotateX(4deg) rotateY(7deg) rotateZ(1deg); }
+}
+
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 0.9; transform: scale(1.04); }
+}
+
+@keyframes caustic-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes total-pop {
+  0% { transform: scale(0.75); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickaxe-strike,
+  .rock-shell-impact,
+  .debris-chip,
+  .debris-dust,
+  .debris-spark,
+  .reveal-gem-wrap,
+  .reveal-core-glow,
+  .reveal-caustics,
+  .rarity-total-pop {
+    animation: none !important;
+  }
+}
